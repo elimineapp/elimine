@@ -1,0 +1,50 @@
+{
+  "@@locale": "ru",
+
+  "appTitle": "Elimine",
+
+  "newSubstanceTile": "Новое",
+  "recentTitle": "Последние",
+  "historyTitle": "История",
+  "emptyIntakes": "Записей пока нет",
+  "neverLogged": "Ещё не было",
+
+  "relativeToday": "сегодня",
+  "relativeYesterday": "вчера",
+  "relativeDaysAgo": "{count, plural, one{{count} день назад} few{{count} дня назад} many{{count} дней назад} other{{count} дня назад}}",
+  "relativeMonthsAgo": "{count, plural, other{{count} мес. назад}}",
+  "relativeYearsAgo": "{count, plural, one{{count} год назад} few{{count} года назад} many{{count} лет назад} other{{count} года назад}}",
+
+  "dayToday": "Сегодня",
+  "dayYesterday": "Вчера",
+  "dayBeforeYesterday": "Позавчера",
+  "timeNow": "Сейчас",
+  "timeNowAt": "Сейчас (сегодня, {time})",
+
+  "doseTitle": "Доза",
+  "customDose": "Своя",
+  "customDoseTitle": "Своя доза",
+  "logButton": "Зафиксировать",
+  "intakeLogged": "Записано: {dose}",
+  "intakeDeleted": "Запись удалена",
+  "undo": "Отменить",
+  "cancel": "Отмена",
+  "ok": "ОК",
+
+  "createSubstanceTitle": "Новое вещество",
+  "editSubstanceTitle": "Редактирование",
+  "fieldName": "Название",
+  "fieldUnit": "Единица",
+  "unitSuggestions": "мг,г,мл,шт,таб",
+  "fieldColor": "Цвет",
+  "fieldIcon": "Иконка",
+  "fieldDoses": "Дозировка",
+  "addDoseHint": "Добавить дозу",
+  "requiredField": "Обязательное поле",
+  "save": "Сохранить",
+  "archive": "В архив",
+  "archiveConfirm": "Отправить «{name}» в архив? Вещество пропадёт с главной, история сохранится.",
+  "unitChangedTitle": "Сменить единицу?",
+  "unitChangedBody": "История не пересчитывается: у старых записей останутся те же числа с новой единицей.",
+  "change": "Сменить"
+}
