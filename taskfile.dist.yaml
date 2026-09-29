@@ -1,0 +1,85 @@
+# Common project commands: `task --list` shows them all.
+# For machine-specific overrides, copy this file to taskfile.yaml (Task prefers it).
+version: "3"
+
+vars:
+  FLUTTER: flutter
+  DART: dart
+  # Target for run/install, e.g. `task run DEVICE=emulator-5554`. Empty lets Flutter pick.
+  DEVICE: ""
+  AVD: elimine_pixel8
+
+tasks:
+  deps:
+    desc: Install dependencies
+    cmds:
+      - "{{.FLUTTER}} pub get"
+
+  gen:
+    desc: Generate Drift and localization code
+    cmds:
+      - "{{.DART}} run build_runner build"
+      - "{{.FLUTTER}} gen-l10n"
+
+  gen:watch:
+    desc: Regenerate Drift code on every change
+    cmds:
+      - "{{.DART}} run build_runner watch"
+
+  format:
+    desc: Format Dart sources
+    cmds:
+      - "{{.DART}} format lib test"
+
+  analyze:
+    desc: Run the static analyzer
+    cmds:
+      - "{{.FLUTTER}} analyze"
+
+  test:
+    desc: Run all tests
+    cmds:
+      - "{{.FLUTTER}} test --timeout 30s {{.CLI_ARGS}}"
+
+  check:
+    desc: Formatting, analyzer and tests; run before committing
+    cmds:
+      - "{{.DART}} format --output=none --set-exit-if-changed lib test"
+      - task: analyze
+      - task: test
+
+  devices:
+    desc: List connected devices and emulators
+    cmds:
+      - "{{.FLUTTER}} devices"
+
+  emulator:
+    desc: Start the Android emulator
+    cmds:
+      - "{{.FLUTTER}} emulators --launch {{.AVD}}"
+
+  run:
+    desc: Run the app with hot reload (DEVICE=<id> to choose a device)
+    cmds:
+      - "{{.FLUTTER}} run {{if .DEVICE}}-d {{.DEVICE}}{{end}}"
+
+  install:
+    desc: Build and install a debug build without attaching (DEVICE=<id>)
+    cmds:
+      - "{{.FLUTTER}} run --no-resident {{if .DEVICE}}-d {{.DEVICE}}{{end}}"
+
+  build:apk:
+    desc: Build a release APK
+    cmds:
+      - "{{.FLUTTER}} build apk --release"
+
+  schema:dump:
+    desc: Snapshot the Drift schema; do it before bumping schemaVersion
+    cmds:
+      - "{{.DART}} run drift_dev schema dump lib/core/db/database.dart drift_schemas/"
+
+  clean:
+    desc: Remove build outputs and reinstall dependencies
+    cmds:
+      - "{{.FLUTTER}} clean"
+      - task: deps
