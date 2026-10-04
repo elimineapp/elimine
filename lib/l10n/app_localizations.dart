@@ -398,6 +398,108 @@ abstract class AppLocalizations {
   /// **'Restore'**
   String get restore;
 
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @backupSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get backupSection;
+
+  /// No description provided for @exportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get exportTitle;
+
+  /// No description provided for @exportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save all data to a file'**
+  String get exportSubtitle;
+
+  /// No description provided for @exportDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Data exported'**
+  String get exportDone;
+
+  /// No description provided for @importTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get importTitle;
+
+  /// No description provided for @importSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add data from a backup file'**
+  String get importSubtitle;
+
+  /// No description provided for @substancesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} substance} other{{count} substances}}'**
+  String substancesCount(int count);
+
+  /// No description provided for @intakesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} entry} other{{count} entries}}'**
+  String intakesCount(int count);
+
+  /// No description provided for @importPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import data?'**
+  String get importPreviewTitle;
+
+  /// No description provided for @importWillAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Will be added: {substances} and {intakes}.'**
+  String importWillAdd(String substances, String intakes);
+
+  /// No description provided for @importPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Already here, skipped: {substances} and {intakes}.'**
+  String importPresent(String substances, String intakes);
+
+  /// No description provided for @importNothingNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in this file is already here.'**
+  String get importNothingNew;
+
+  /// No description provided for @importAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get importAction;
+
+  /// No description provided for @importDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported: {substances} and {intakes}'**
+  String importDone(String substances, String intakes);
+
+  /// No description provided for @importErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t import this file'**
+  String get importErrorTitle;
+
+  /// No description provided for @importNewerVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup was made by a newer version of Elimine. Update the app and try again.'**
+  String get importNewerVersion;
+
   /// No description provided for @entriesCount.
   ///
   /// In en, this message translates to:

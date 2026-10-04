@@ -211,6 +211,84 @@ class AppLocalizationsRu extends AppLocalizations {
   String get restore => 'Вернуть';
 
   @override
+  String get settingsTitle => 'Настройки';
+
+  @override
+  String get backupSection => 'Резервная копия';
+
+  @override
+  String get exportTitle => 'Экспорт';
+
+  @override
+  String get exportSubtitle => 'Сохранить все данные в файл';
+
+  @override
+  String get exportDone => 'Данные экспортированы';
+
+  @override
+  String get importTitle => 'Импорт';
+
+  @override
+  String get importSubtitle => 'Добавить данные из файла резервной копии';
+
+  @override
+  String substancesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count вещества',
+      many: '$count веществ',
+      few: '$count вещества',
+      one: '$count вещество',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String intakesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count записи',
+      many: '$count записей',
+      few: '$count записи',
+      one: '$count запись',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importPreviewTitle => 'Импортировать данные?';
+
+  @override
+  String importWillAdd(String substances, String intakes) {
+    return 'Будет добавлено: $substances и $intakes.';
+  }
+
+  @override
+  String importPresent(String substances, String intakes) {
+    return 'Уже есть, пропустим: $substances и $intakes.';
+  }
+
+  @override
+  String get importNothingNew => 'Всё из этого файла уже есть.';
+
+  @override
+  String get importAction => 'Импортировать';
+
+  @override
+  String importDone(String substances, String intakes) {
+    return 'Импортировано: $substances и $intakes';
+  }
+
+  @override
+  String get importErrorTitle => 'Не удалось импортировать файл';
+
+  @override
+  String get importNewerVersion =>
+      'Эта копия сделана более новой версией Elimine. Обновите приложение и попробуйте снова.';
+
+  @override
   String entriesCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

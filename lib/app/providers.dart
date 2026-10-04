@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/db/database.dart';
 import '../core/db/queries.dart';
 import '../features/analytics/analytics_queries.dart';
+import '../features/backup/backup_files.dart';
+import '../features/backup/backup_service.dart';
 import '../services/intake_service.dart';
 import '../services/substance_service.dart';
 
@@ -18,6 +20,14 @@ final intakeServiceProvider = Provider<IntakeService>(
 
 final substanceServiceProvider = Provider<SubstanceService>(
   (ref) => SubstanceService(ref.watch(databaseProvider)),
+);
+
+final backupServiceProvider = Provider<BackupService>(
+  (ref) => BackupService(ref.watch(databaseProvider)),
+);
+
+final backupFilesProvider = Provider<BackupFiles>(
+  (ref) => const SystemBackupFiles(),
 );
 
 final substancesProvider = StreamProvider<List<SubstanceWithLast>>(

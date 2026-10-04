@@ -206,6 +206,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String get restore => 'Restore';
 
   @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get backupSection => 'Backup';
+
+  @override
+  String get exportTitle => 'Export';
+
+  @override
+  String get exportSubtitle => 'Save all data to a file';
+
+  @override
+  String get exportDone => 'Data exported';
+
+  @override
+  String get importTitle => 'Import';
+
+  @override
+  String get importSubtitle => 'Add data from a backup file';
+
+  @override
+  String substancesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count substances',
+      one: '$count substance',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String intakesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries',
+      one: '$count entry',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importPreviewTitle => 'Import data?';
+
+  @override
+  String importWillAdd(String substances, String intakes) {
+    return 'Will be added: $substances and $intakes.';
+  }
+
+  @override
+  String importPresent(String substances, String intakes) {
+    return 'Already here, skipped: $substances and $intakes.';
+  }
+
+  @override
+  String get importNothingNew => 'Everything in this file is already here.';
+
+  @override
+  String get importAction => 'Import';
+
+  @override
+  String importDone(String substances, String intakes) {
+    return 'Imported: $substances and $intakes';
+  }
+
+  @override
+  String get importErrorTitle => 'Can\'t import this file';
+
+  @override
+  String get importNewerVersion =>
+      'This backup was made by a newer version of Elimine. Update the app and try again.';
+
+  @override
   String entriesCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/analytics/analytics_screen.dart';
 import '../features/archive/archive_screen.dart';
+import '../features/backup/settings_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/substance/substance_form_screen.dart';
 import '../features/substance/substance_screen.dart';
@@ -31,6 +32,10 @@ final router = GoRouter(
     GoRoute(
       path: '/archive',
       builder: (context, state) => const ArchiveScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
     ),
     // `new` is declared before `:id` so it is not taken for an id.
     GoRoute(
