@@ -53,3 +53,8 @@ app.*.map.json
 
 # Output of design/icon/source/gen.py
 design/icon/source/out/
+
+# Release signing: the key and its passwords never enter the repository
+android/key.properties
+*.jks
+*.keystore

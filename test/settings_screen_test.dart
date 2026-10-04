@@ -64,6 +64,7 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           backupFilesProvider.overrideWithValue(files),
+          appVersionProvider.overrideWith((ref) async => '0.1.0'),
         ],
         child: MaterialApp(
           locale: const Locale('en'),
@@ -188,6 +189,27 @@ void main() {
     await tester.tap(find.byKey(const Key('import')));
     await settle(tester);
     expect(find.byType(AlertDialog), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the last row shows the installed version', (tester) async {
+    await pumpSettings(tester);
+    final last = tester.widgetList<ListTile>(find.byType(ListTile)).last;
+    expect(last.key, const Key('version'));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('version')),
+        matching: find.text('Version'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('version')),
+        matching: find.text('0.1.0'),
+      ),
+      findsOneWidget,
+    );
     await tester.pumpWidget(const SizedBox());
   });
 }

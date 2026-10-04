@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/db/database.dart';
 import '../core/db/queries.dart';
@@ -28,6 +29,11 @@ final backupServiceProvider = Provider<BackupService>(
 
 final backupFilesProvider = Provider<BackupFiles>(
   (ref) => const SystemBackupFiles(),
+);
+
+/// Version name of the installed build, e.g. `0.1.0`.
+final appVersionProvider = FutureProvider<String>(
+  (ref) async => (await PackageInfo.fromPlatform()).version,
 );
 
 final substancesProvider = StreamProvider<List<SubstanceWithLast>>(

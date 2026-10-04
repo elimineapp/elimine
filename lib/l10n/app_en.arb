@@ -89,6 +89,7 @@
   "@importDone": { "placeholders": { "substances": { "type": "String" }, "intakes": { "type": "String" } } },
   "importErrorTitle": "Can't import this file",
   "importNewerVersion": "This backup was made by a newer version of Elimine. Update the app and try again.",
+  "version": "Version",
   "entriesCount": "{count, plural, =0{No entries} one{{count} entry} other{{count} entries}}",
   "@entriesCount": { "placeholders": { "count": { "type": "int" } } },
 

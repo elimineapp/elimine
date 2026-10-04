@@ -289,6 +289,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Эта копия сделана более новой версией Elimine. Обновите приложение и попробуйте снова.';
 
   @override
+  String get version => 'Версия';
+
+  @override
   String entriesCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

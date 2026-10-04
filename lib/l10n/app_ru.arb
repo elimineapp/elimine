@@ -73,6 +73,7 @@
   "importDone": "Импортировано: {substances} и {intakes}",
   "importErrorTitle": "Не удалось импортировать файл",
   "importNewerVersion": "Эта копия сделана более новой версией Elimine. Обновите приложение и попробуйте снова.",
+  "version": "Версия",
   "entriesCount": "{count, plural, =0{Нет записей} one{{count} запись} few{{count} записи} many{{count} записей} other{{count} записи}}",
 
   "navHome": "Главная",

@@ -7,7 +7,8 @@ import '../../l10n/app_localizations.dart';
 import 'backup_format.dart';
 import 'backup_service.dart';
 
-/// App settings; for now the backup: export to a file and import from one.
+/// App settings: the backup (export to a file and import from one) and the
+/// installed version.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key, this.clock = DateTime.now});
 
@@ -177,6 +178,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: Text(l.importTitle),
             subtitle: Text(l.importSubtitle),
             onTap: _import,
+          ),
+          const Divider(),
+          ListTile(
+            key: const Key('version'),
+            leading: const Icon(Icons.info_outline),
+            title: Text(l.version),
+            subtitle: Text(ref.watch(appVersionProvider).value ?? ''),
           ),
         ],
       ),

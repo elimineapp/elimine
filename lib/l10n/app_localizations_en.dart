@@ -280,6 +280,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'This backup was made by a newer version of Elimine. Update the app and try again.';
 
   @override
+  String get version => 'Version';
+
+  @override
   String entriesCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

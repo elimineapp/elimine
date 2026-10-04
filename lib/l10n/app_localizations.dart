@@ -500,6 +500,12 @@ abstract class AppLocalizations {
   /// **'This backup was made by a newer version of Elimine. Update the app and try again.'**
   String get importNewerVersion;
 
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
   /// No description provided for @entriesCount.
   ///
   /// In en, this message translates to:

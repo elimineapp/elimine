@@ -1,0 +1,25 @@
+name: Set up
+description: Java, Flutter and Task, then the Dart dependencies.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      with:
+        distribution: temurin
+        java-version: "17"
+
+    # The one place that pins the Flutter version for CI and releases.
+    - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+      with:
+        channel: stable
+        flutter-version: "3.47.5"
+        cache: true
+
+    - uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
+      with:
+        version: 3.x
+        repo-token: ${{ github.token }}
+
+    - run: task deps
+      shell: bash
