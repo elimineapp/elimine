@@ -55,8 +55,11 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
+  # Skipped release-please (manual runs) would otherwise skip everything after
+  # target, so the jobs below check their direct dependency explicitly.
   check:
     needs: target
+    if: ${{ !failure() && !cancelled() && needs.target.result == 'success' }}
     permissions:
       contents: read
     uses: ./.github/workflows/ci.yml
@@ -65,6 +68,7 @@ jobs:
 
   apk:
     needs: [target, check]
+    if: ${{ !failure() && !cancelled() && needs.check.result == 'success' }}
     runs-on: ubuntu-latest
     # The signing secrets live in this environment, limited to main and v* tags.
     environment: release
