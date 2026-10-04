@@ -66,6 +66,65 @@ void main() {
     });
   });
 
+  group('deleting and restoring', () {
+    test('delete removes the substance, its doses and all intakes', () async {
+      final gone = await create('Gone', doses: [1, 2]);
+      final kept = await create('Kept', doses: [5]);
+      final removed = await intakes.log(substanceId: gone, amount: 1);
+      await intakes.delete(removed);
+      await intakes.log(substanceId: gone, amount: null);
+      await intakes.log(substanceId: kept, amount: 5);
+
+      await substances.delete(gone);
+
+      expect((await db.select(db.substances).get()).map((s) => s.id), [kept]);
+      expect((await db.select(db.doses).get()).map((d) => d.substanceId), [
+        kept,
+      ]);
+      expect((await db.select(db.intakes).get()).map((i) => i.substanceId), [
+        kept,
+      ]);
+    });
+
+    test('counts ignore soft-deleted intakes', () async {
+      final a = await create('A');
+      final b = await create('B');
+      await intakes.log(substanceId: a, amount: 1);
+      await intakes.delete(await intakes.log(substanceId: a, amount: 2));
+      await substances.archive(a);
+      await substances.archive(b);
+
+      expect(await db.countIntakes(a), 1);
+      final archived = await db.watchArchivedSubstances().first;
+      expect(
+        [
+          for (final (:substance, :intakes) in archived)
+            (substance.name, intakes),
+        ],
+        [('A', 1), ('B', 0)],
+      );
+    });
+
+    test('restore brings an archived substance back in its place', () async {
+      await create('A');
+      final b = await create('B');
+      await create('C');
+      await substances.archive(b);
+      expect(
+        (await db.watchSubstancesWithLast().first).map((i) => i.substance.id),
+        isNot(contains(b)),
+      );
+
+      await substances.restore(b);
+      expect(
+        (await db.watchSubstancesWithLast().first)
+            .map((i) => i.substance.name)
+            .take(2),
+        ['A', 'B'],
+      );
+    });
+  });
+
   group('IntakeService', () {
     test('clamps a future time to now', () async {
       final now = DateTime(2026, 9, 29, 12);

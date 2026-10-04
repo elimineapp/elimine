@@ -24,6 +24,10 @@ final substancesProvider = StreamProvider<List<SubstanceWithLast>>(
   (ref) => ref.watch(databaseProvider).watchSubstancesWithLast(),
 );
 
+final archivedSubstancesProvider = StreamProvider<List<SubstanceWithCount>>(
+  (ref) => ref.watch(databaseProvider).watchArchivedSubstances(),
+);
+
 final recentIntakesProvider = StreamProvider<List<IntakeWithSubstance>>(
   (ref) => ref.watch(databaseProvider).watchRecentIntakes(),
 );

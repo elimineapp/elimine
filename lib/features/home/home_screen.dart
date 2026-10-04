@@ -20,6 +20,7 @@ class HomeScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final substances = ref.watch(substancesProvider);
     final intakes = ref.watch(recentIntakesProvider);
+    final archived = ref.watch(archivedSubstancesProvider).value ?? const [];
     final today = DateFormat.MMMMEEEEd(l.localeName).format(DateTime.now());
 
     return Scaffold(
@@ -90,6 +91,20 @@ class HomeScreen extends ConsumerWidget {
             ),
             _ => const SliverToBoxAdapter(child: SizedBox.shrink()),
           },
+          // Out of the daily path: below everything else, only when needed.
+          if (archived.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: ListTile(
+                  key: const Key('archiveEntry'),
+                  leading: const Icon(Icons.archive_outlined),
+                  title: Text(l.archiveEntry(archived.length)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/archive'),
+                ),
+              ),
+            ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
         ],
       ),

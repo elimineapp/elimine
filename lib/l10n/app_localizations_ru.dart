@@ -173,6 +173,58 @@ class AppLocalizationsRu extends AppLocalizations {
   String get change => 'Сменить';
 
   @override
+  String get delete => 'Удалить';
+
+  @override
+  String deleteConfirmTitle(String name) {
+    return 'Удалить «$name»?';
+  }
+
+  @override
+  String deleteConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Вместе с ним удалятся $count записи.',
+      many: 'Вместе с ним удалятся $count записей.',
+      few: 'Вместе с ним удалятся $count записи.',
+      one: 'Вместе с ним удалится $count запись.',
+      zero: 'Записей у него нет.',
+    );
+    return '$_temp0 Это нельзя отменить.';
+  }
+
+  @override
+  String substanceDeleted(String name) {
+    return '«$name» удалено';
+  }
+
+  @override
+  String get archiveTitle => 'Архив';
+
+  @override
+  String archiveEntry(int count) {
+    return 'Архив ($count)';
+  }
+
+  @override
+  String get restore => 'Вернуть';
+
+  @override
+  String entriesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count записи',
+      many: '$count записей',
+      few: '$count записи',
+      one: '$count запись',
+      zero: 'Нет записей',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get navHome => 'Главная';
 
   @override

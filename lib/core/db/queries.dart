@@ -4,6 +4,7 @@ import 'database.dart';
 
 typedef SubstanceWithLast = ({Substance substance, Intake? last});
 typedef IntakeWithSubstance = ({Intake intake, Substance substance});
+typedef SubstanceWithCount = ({Substance substance, int intakes});
 
 extension SharedQueries on AppDatabase {
   /// Active substances with their latest intake, in the user's order.
@@ -72,6 +73,48 @@ extension SharedQueries on AppDatabase {
               ..limit(1))
             .getSingleOrNull();
     return row != null;
+  }
+
+  /// Visible (non-deleted) intakes of one substance.
+  Future<int> countIntakes(String substanceId) async {
+    final count = intakes.id.count();
+    final row =
+        await (selectOnly(intakes)
+              ..addColumns([count])
+              ..where(
+                intakes.substanceId.equals(substanceId) &
+                    intakes.deletedAt.isNull(),
+              ))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Archived substances with their visible intake counts, in the user's
+  /// order.
+  Stream<List<SubstanceWithCount>> watchArchivedSubstances() {
+    final count = intakes.id.count();
+    final query =
+        select(substances).join([
+            leftOuterJoin(
+              intakes,
+              intakes.substanceId.equalsExp(substances.id) &
+                  intakes.deletedAt.isNull(),
+              useColumns: false,
+            ),
+          ])
+          ..addColumns([count])
+          ..where(substances.archivedAt.isNotNull())
+          ..groupBy([substances.id])
+          ..orderBy([
+            OrderingTerm.asc(substances.sortOrder),
+            OrderingTerm.asc(substances.id),
+          ]);
+    return query.watch().map(
+      (rows) => [
+        for (final row in rows)
+          (substance: row.readTable(substances), intakes: row.read(count) ?? 0),
+      ],
+    );
   }
 
   Stream<List<IntakeWithSubstance>> watchRecentIntakes({int limit = 10}) {

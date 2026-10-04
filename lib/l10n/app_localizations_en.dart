@@ -170,6 +170,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get change => 'Change';
 
   @override
+  String get delete => 'Delete';
+
+  @override
+  String deleteConfirmTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String deleteConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'All $count of its entries will be deleted too.',
+      one: 'Its $count entry will be deleted too.',
+      zero: 'It has no entries.',
+    );
+    return '$_temp0 This cannot be undone.';
+  }
+
+  @override
+  String substanceDeleted(String name) {
+    return '$name deleted';
+  }
+
+  @override
+  String get archiveTitle => 'Archive';
+
+  @override
+  String archiveEntry(int count) {
+    return 'Archive ($count)';
+  }
+
+  @override
+  String get restore => 'Restore';
+
+  @override
+  String entriesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries',
+      one: '$count entry',
+      zero: 'No entries',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get navHome => 'Home';
 
   @override

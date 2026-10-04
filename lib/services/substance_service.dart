@@ -61,6 +61,26 @@ class SubstanceService {
         SubstancesCompanion(archivedAt: Value(_clock())),
       );
 
+  /// Puts an archived substance back on the home grid, in its old place.
+  Future<void> restore(String id) =>
+      (db.update(db.substances)..where((s) => s.id.equals(id))).write(
+        const SubstancesCompanion(archivedAt: Value(null)),
+      );
+
+  /// Removes the substance with its doses and every intake, soft-deleted ones
+  /// included. Permanent: with `secure_delete` on, SQLite zeroes the freed
+  /// content, and the checkpoint drops WAL frames that still hold it.
+  Future<void> delete(String id) async {
+    await db.transaction(() async {
+      await (db.delete(
+        db.intakes,
+      )..where((i) => i.substanceId.equals(id))).go();
+      await (db.delete(db.doses)..where((d) => d.substanceId.equals(id))).go();
+      await (db.delete(db.substances)..where((s) => s.id.equals(id))).go();
+    });
+    await db.customSelect('PRAGMA wal_checkpoint(TRUNCATE)').get();
+  }
+
   /// Doses are not referenced by intakes, so they can be rewritten outright.
   Future<void> _replaceDoses(String substanceId, List<double> amounts) async {
     await (db.delete(

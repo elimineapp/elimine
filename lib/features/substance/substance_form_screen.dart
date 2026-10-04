@@ -7,6 +7,7 @@ import '../../core/appearance.dart';
 import '../../core/db/queries.dart';
 import '../../core/l10n/format.dart';
 import '../../l10n/app_localizations.dart';
+import 'delete_substance.dart';
 
 /// Creates a substance, or edits one when [substanceId] is set.
 class SubstanceFormScreen extends ConsumerStatefulWidget {
@@ -28,6 +29,9 @@ class _SubstanceFormScreenState extends ConsumerState<SubstanceFormScreen> {
   String _icon = substanceIcons.keys.first;
   List<double> _doses = [];
   String? _originalUnit;
+
+  /// The saved name, for the delete dialog even while the field is edited.
+  String _originalName = '';
   bool _loading = false;
 
   bool get _editing => widget.substanceId != null;
@@ -61,6 +65,7 @@ class _SubstanceFormScreenState extends ConsumerState<SubstanceFormScreen> {
       _name.text = substance.name;
       _unit.text = substance.unit;
       _originalUnit = substance.unit;
+      _originalName = substance.name;
       _color = substance.color;
       _icon = substance.icon;
       _doses = [for (final d in doses) d.amount];
@@ -145,6 +150,16 @@ class _SubstanceFormScreenState extends ConsumerState<SubstanceFormScreen> {
     }
     await ref.read(substanceServiceProvider).archive(widget.substanceId!);
     if (mounted) context.go('/');
+  }
+
+  Future<void> _delete() async {
+    final deleted = await confirmAndDeleteSubstance(
+      context,
+      ref,
+      id: widget.substanceId!,
+      name: _originalName,
+    );
+    if (deleted && mounted) context.go('/');
   }
 
   @override
@@ -292,6 +307,16 @@ class _SubstanceFormScreenState extends ConsumerState<SubstanceFormScreen> {
                       icon: const Icon(Icons.archive_outlined),
                       label: Text(l.archive),
                       onPressed: _archive,
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      key: const Key('deleteButton'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.error,
+                      ),
+                      icon: const Icon(Icons.delete_outline),
+                      label: Text(l.delete),
+                      onPressed: _delete,
                     ),
                   ],
                 ],

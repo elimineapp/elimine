@@ -27,6 +27,8 @@ class AppDatabase extends _$AppDatabase {
     ),
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
+      // Deleting a substance must not leave its data readable in free pages.
+      await customStatement('PRAGMA secure_delete = ON');
       // The home-screen widget will write through a second connection from a
       // background engine; WAL plus a busy timeout lets both coexist.
       await customSelect('PRAGMA journal_mode = WAL').get();

@@ -356,6 +356,54 @@ abstract class AppLocalizations {
   /// **'Change'**
   String get change;
 
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @deleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String deleteConfirmTitle(String name);
+
+  /// No description provided for @deleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{It has no entries.} one{Its {count} entry will be deleted too.} other{All {count} of its entries will be deleted too.}} This cannot be undone.'**
+  String deleteConfirmBody(int count);
+
+  /// No description provided for @substanceDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} deleted'**
+  String substanceDeleted(String name);
+
+  /// No description provided for @archiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get archiveTitle;
+
+  /// No description provided for @archiveEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive ({count})'**
+  String archiveEntry(int count);
+
+  /// No description provided for @restore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restore;
+
+  /// No description provided for @entriesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No entries} one{{count} entry} other{{count} entries}}'**
+  String entriesCount(int count);
+
   /// No description provided for @navHome.
   ///
   /// In en, this message translates to:
