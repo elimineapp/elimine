@@ -213,7 +213,18 @@ class _Metric extends StatelessWidget {
               decoration: BoxDecoration(color: c, shape: BoxShape.circle),
             ),
           Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-          Text(value, style: theme.textTheme.titleSmall),
+          // A long value (several tied weekdays) wraps instead of squeezing
+          // the label down to a column of single letters.
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.6,
+            ),
+            child: Text(
+              value,
+              style: theme.textTheme.titleSmall,
+              textAlign: TextAlign.end,
+            ),
+          ),
         ],
       ),
     );

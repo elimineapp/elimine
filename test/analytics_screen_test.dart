@@ -88,6 +88,37 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('a long value wraps and leaves the label readable', (
+    tester,
+  ) async {
+    // Two intakes on every day from Wednesday to Sunday tie with Monday.
+    await tester.runAsync(() async {
+      final coffee = (await db.select(db.substances).get())
+          .firstWhere((s) => s.name == 'Coffee')
+          .id;
+      final intakes = IntakeService(db, clock: () => now);
+      for (var day = 23; day <= 27; day++) {
+        for (final hour in [9, 18]) {
+          await intakes.log(
+            substanceId: coffee,
+            amount: 100,
+            takenAt: DateTime(2026, 9, day, hour),
+          );
+        }
+      }
+    });
+    await pumpScreen(tester);
+    final value = find.text(
+      'Monday, Wednesday, Thursday, Friday, Saturday, Sunday',
+    );
+    expect(value, findsOneWidget);
+    final label = tester.getSize(find.text('Busiest weekday'));
+    expect(label.width, greaterThan(100));
+    expect(label.height, lessThan(3 * 24));
+    expect(tester.getSize(value).width, lessThanOrEqualTo(360 * 0.6));
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('all years includes old intakes', (tester) async {
     await pumpScreen(tester);
     await tester.tap(find.text('All years'));
