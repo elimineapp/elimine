@@ -20,3 +20,8 @@ rules:
   tasks:
     - End with running `task check` (format, analyzer, tests).
     - When the UI changes, include a manual check on a device or emulator.
+
+operations:
+  apply:
+    guidance:
+      - Follow CONTRIBUTING.md for commits (Conventional Commits, English).
