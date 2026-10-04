@@ -47,7 +47,9 @@ class Doses extends Table {
 class Intakes extends Table {
   TextColumn get id => text().clientDefault(newId)();
   TextColumn get substanceId => text().references(Substances, #id)();
-  RealColumn get amount => real()();
+
+  /// Null when the dose is unknown: the fact of the intake still counts.
+  RealColumn get amount => real().nullable()();
 
   /// Stored as unix seconds (UTC). Together with [tzOffsetMin] this gives the
   /// local wall-clock time at the moment of intake, independent of where the

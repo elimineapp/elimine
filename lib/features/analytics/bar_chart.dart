@@ -16,6 +16,7 @@ class ChartBar {
     required this.axisLabel,
     required this.tooltipTitle,
     required this.segments,
+    this.note,
   });
 
   /// Shown under the bar; empty to skip, so labels stay sparse.
@@ -25,13 +26,18 @@ class ChartBar {
   /// Bottom to top. One segment is a plain bar.
   final List<ChartSegment> segments;
 
+  /// Something the bar's value leaves out, e.g. "1 without dose": marked with
+  /// a dot above the bar and added as the last tooltip line.
+  final String? note;
+
   double get total => segments.fold(0, (sum, s) => sum + s.value);
 }
 
 /// Bars anchored to a zero baseline with a recessive grid, 4px rounded tops,
 /// a 2px surface gap between stacked segments and a tooltip on tap. Empty
 /// periods stay as gaps rather than being smoothed over. A tap pins the
-/// tooltip to a bar; tapping it again or elsewhere clears it.
+/// tooltip to a bar; tapping it again or elsewhere clears it. A bar with a
+/// [ChartBar.note] gets a dot just above it (or above the baseline).
 class ElimineBarChart extends StatefulWidget {
   const ElimineBarChart({
     super.key,
@@ -67,6 +73,10 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
     if (old.bars.length != widget.bars.length) _selected = null;
   }
 
+  static const _bottomTitles = 24.0;
+  static const _dot = 6.0;
+  static const _dotGap = 3.0;
+
   @override
   Widget build(BuildContext context) {
     final bars = widget.bars;
@@ -77,10 +87,18 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
       color: scheme.onSurfaceVariant,
     );
     final surface = scheme.surface;
-    final (maxY, step) = _axis(
+    var (maxY, step) = _axis(
       bars.map((b) => b.total).fold(0.0, math.max),
       widget.integerValues,
     );
+    // Chart units per pixel, so the dot keeps its size at any scale; bump
+    // the axis by a step when a dot would stick out of the top.
+    double unitsPerPx() => maxY / (widget.height - _bottomTitles);
+    final dotSpan = (_dotGap + _dot) * unitsPerPx();
+    if (bars.any((b) => b.note != null && b.total + dotSpan > maxY)) {
+      maxY += step;
+    }
+    final upp = unitsPerPx();
 
     return SizedBox(
       height: widget.height,
@@ -119,7 +137,7 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    reservedSize: 24,
+                    reservedSize: _bottomTitles,
                     getTitlesWidget: (value, meta) => SideTitleWidget(
                       meta: meta,
                       child: Text(
@@ -132,6 +150,8 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
               ),
               barTouchData: BarTouchData(
                 handleBuiltInTouches: false,
+                // Dots and short bars are small targets.
+                touchExtraThreshold: const EdgeInsets.only(top: 16),
                 touchCallback: (event, response) {
                   if (event is! FlTapUpEvent) return;
                   final hit = response?.spot?.touchedBarGroupIndex;
@@ -149,8 +169,17 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
                 for (final (i, bar) in bars.indexed)
                   BarChartGroupData(
                     x: i,
-                    barRods: [_rod(bar, barWidth, surface)],
-                    showingTooltipIndicators: i == _selected ? [0] : const [],
+                    // The dot shares the bar's column instead of sitting
+                    // beside it.
+                    groupVertically: true,
+                    barRods: [
+                      _rod(bar, barWidth, surface),
+                      if (bar.note != null) _dotRod(bar, barWidth, upp),
+                    ],
+                    // On the topmost rod, so the tooltip clears the dot.
+                    showingTooltipIndicators: i == _selected
+                        ? [bar.note != null ? 1 : 0]
+                        : const [],
                   ),
               ],
             ),
@@ -193,6 +222,18 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
     );
   }
 
+  BarChartRodData _dotRod(ChartBar bar, double barWidth, double upp) {
+    final from = bar.total + _dotGap * upp;
+    final size = math.min(_dot, barWidth);
+    return BarChartRodData(
+      fromY: from,
+      toY: from + size * upp,
+      width: size,
+      color: bar.segments.firstOrNull?.color,
+      borderRadius: BorderRadius.circular(size / 2),
+    );
+  }
+
   BarTooltipItem _tooltip(ChartBar bar, ThemeData theme) {
     final style = theme.textTheme.bodySmall!.copyWith(
       color: theme.colorScheme.onInverseSurface,
@@ -208,7 +249,8 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
       style.copyWith(fontWeight: FontWeight.w600),
       textAlign: TextAlign.start,
       children: [
-        if (lines.isEmpty) TextSpan(text: '\n${format(0)}', style: style),
+        if (lines.isEmpty && bar.note == null)
+          TextSpan(text: '\n${format(0)}', style: style),
         for (final s in lines) ...[
           TextSpan(
             text: '\n● ',
@@ -219,6 +261,7 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
             style: style,
           ),
         ],
+        if (bar.note case final note?) TextSpan(text: '\n$note', style: style),
       ],
     );
   }

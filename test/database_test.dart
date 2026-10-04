@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:elimine/core/db/database.dart';
 import 'package:elimine/core/db/queries.dart';
@@ -78,6 +79,17 @@ void main() {
       expect((await db.watchIntakesFor(id).first).single.takenAt, now);
     });
 
+    test('logs an intake without a dose', () async {
+      final id = await create('A');
+      await intakes.log(substanceId: id, amount: null);
+      final logged = (await db.watchIntakesFor(id).first).single;
+      expect(logged.amount, isNull);
+      expect(
+        (await db.watchSubstancesWithLast().first).single.last?.id,
+        logged.id,
+      );
+    });
+
     test(
       'soft delete hides an intake everywhere; restore brings it back',
       () async {
@@ -121,7 +133,7 @@ void main() {
         .insert(
           IntakesCompanion.insert(
             substanceId: id,
-            amount: 10,
+            amount: const Value(10),
             takenAt: utc,
             tzOffsetMin: offsetMin,
           ),
@@ -138,10 +150,12 @@ void main() {
         .first;
     final other = await create('B');
     await intakes.log(substanceId: other, amount: 1);
-    expect(await db.watchDailyTotals(substanceId: other).first, hasLength(1));
+    await intakes.log(substanceId: other, amount: null);
+    final mixed = (await db.watchDailyTotals(substanceId: other).first).single;
+    expect((mixed.total, mixed.count, mixed.dosed), (1.0, 2, 1));
     expect(
-      {for (final t in totals) t.day: (t.total, t.count)},
-      {'2026-09-01': (10.0, 1), '2026-09-02': (20.0, 2)},
+      {for (final t in totals) t.day: (t.total, t.count, t.dosed)},
+      {'2026-09-01': (10.0, 1, 1), '2026-09-02': (20.0, 2, 2)},
     );
   });
 }

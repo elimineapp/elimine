@@ -73,10 +73,10 @@ tasks:
     cmds:
       - "{{.FLUTTER}} build apk --release"
 
-  schema:dump:
-    desc: Snapshot the Drift schema; do it before bumping schemaVersion
+  db:migrations:
+    desc: Snapshot the Drift schema and generate migration steps and tests; run before and after bumping schemaVersion
     cmds:
-      - "{{.DART}} run drift_dev schema dump lib/core/db/database.dart drift_schemas/"
+      - "{{.DART}} run drift_dev make-migrations"
 
   clean:
     desc: Remove build outputs and reinstall dependencies

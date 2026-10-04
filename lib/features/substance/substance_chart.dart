@@ -11,7 +11,9 @@ import '../analytics/bar_chart.dart';
 import '../analytics/labels.dart';
 
 /// Dose totals of one substance in its own unit: per day for the short
-/// ranges, daily average per month for the year.
+/// ranges, daily average per month for the year. Intakes without a dose add
+/// nothing to the sums and mark their bar with a dot; a range where no intake
+/// has a dose counts intakes instead (per day, or per month for the year).
 class SubstanceChart extends ConsumerStatefulWidget {
   const SubstanceChart({
     super.key,
@@ -52,8 +54,33 @@ class _SubstanceChartState extends ConsumerState<SubstanceChart> {
             .value ??
         const [];
     final analytics = Analytics.build(_range, rows, today: now);
-    final averaged = analytics.unit != BucketUnit.day;
+    final id = substance.id;
+    final buckets = analytics.buckets;
+    final counting =
+        buckets.any((b) => b.countFor(id) > 0) &&
+        buckets.every((b) => b.countFor(id) == b.undosedFor(id));
+    final averaged = !counting && analytics.unit != BucketUnit.day;
+    final unit = substance.unit;
     final color = context.substanceColorOf(substance.color);
+
+    final title = switch ((counting, averaged, unit.isEmpty)) {
+      (true, _, _) => l.intakesChartTitle,
+      (false, true, true) => l.doseChartDailyAverageNoUnit,
+      (false, true, false) => l.doseChartDailyAverage(unit),
+      (false, false, true) => l.doseChartPerDayNoUnit,
+      (false, false, false) => l.doseChartPerDay(unit),
+    };
+
+    double value(Bucket b) {
+      if (counting) return b.countFor(id).toDouble();
+      final total = b.totalFor(id);
+      return averaged ? total / b.elapsedDays(analytics.today) : total;
+    }
+
+    String? note(Bucket b) {
+      final undosed = b.undosedFor(id);
+      return counting || undosed == 0 ? null : l.tooltipWithoutDose(undosed);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -68,36 +95,21 @@ class _SubstanceChartState extends ConsumerState<SubstanceChart> {
           onSelectionChanged: (s) => setState(() => _range = s.single),
         ),
         const SizedBox(height: 16),
-        Text(
-          averaged
-              ? l.doseChartDailyAverage(substance.unit)
-              : l.doseChartPerDay(substance.unit),
-          style: theme.textTheme.titleSmall,
-        ),
+        Text(title, style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         ElimineBarChart(
           formatValue: l.amount,
-          formatTooltipValue: (v) =>
-              l.dose(double.parse(v.toStringAsFixed(2)), substance.unit),
+          formatTooltipValue: counting
+              ? (v) => l.tooltipIntakes(v.round())
+              : (v) => l.dose(double.parse(v.toStringAsFixed(2)), unit),
+          integerValues: counting,
           bars: [
-            for (final (i, bucket) in analytics.buckets.indexed)
+            for (final (i, bucket) in buckets.indexed)
               ChartBar(
-                axisLabel: l.bucketAxisLabel(
-                  bucket,
-                  i,
-                  analytics.buckets.length,
-                ),
+                axisLabel: l.bucketAxisLabel(bucket, i, buckets.length),
                 tooltipTitle: l.bucketTitle(bucket),
-                segments: [
-                  ChartSegment(
-                    substance.name,
-                    color,
-                    averaged
-                        ? bucket.totalFor(substance.id) /
-                              bucket.elapsedDays(analytics.today)
-                        : bucket.totalFor(substance.id),
-                  ),
-                ],
+                segments: [ChartSegment(substance.name, color, value(bucket))],
+                note: note(bucket),
               ),
           ],
         ),

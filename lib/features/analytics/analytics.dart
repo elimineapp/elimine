@@ -15,11 +15,19 @@ class Bucket {
   /// Exclusive.
   final DateTime end;
   final BucketUnit unit;
-  final Map<String, ({double total, int count})> bySubstance = {};
+  final Map<String, ({double total, int count, int dosed})> bySubstance = {};
 
   int get count => bySubstance.values.fold(0, (sum, v) => sum + v.count);
 
   double totalFor(String substanceId) => bySubstance[substanceId]?.total ?? 0;
+
+  int countFor(String substanceId) => bySubstance[substanceId]?.count ?? 0;
+
+  /// Intakes of [substanceId] in this bucket that have no dose.
+  int undosedFor(String substanceId) {
+    final v = bySubstance[substanceId];
+    return v == null ? 0 : v.count - v.dosed;
+  }
 
   /// Days of this bucket that have already happened, for daily averages of
   /// the current, unfinished month.
@@ -91,6 +99,7 @@ class Analytics {
       bucket.bySubstance[p.row.substanceId] = (
         total: (prev?.total ?? 0) + p.row.total,
         count: (prev?.count ?? 0) + p.row.count,
+        dosed: (prev?.dosed ?? 0) + p.row.dosed,
       );
     }
     return Analytics(range, buckets, [

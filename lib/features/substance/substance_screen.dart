@@ -12,6 +12,9 @@ import '../../widgets/intake_tile.dart';
 import '../../widgets/substance_badge.dart';
 import 'substance_chart.dart';
 
+/// A chosen dose; a null amount is "No dose".
+typedef DoseChoice = ({double? amount});
+
 /// Logging block plus this substance's history. The usual flow is two taps:
 /// the tile on the home screen, then "Log" with the last dose preselected.
 class SubstanceScreen extends ConsumerStatefulWidget {
@@ -32,8 +35,9 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
   /// NULL means "now", resolved when logging.
   DateTime? _at;
 
-  /// NULL means "the default": last used dose, else the first frequent one.
-  double? _amount;
+  /// NULL means "the default": the last intake's dose (or "No dose" if it
+  /// had none), else the first frequent dose, else "No dose".
+  DoseChoice? _choice;
 
   DateTime _now() => widget.clock();
 
@@ -83,10 +87,10 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
       builder: (context) =>
           _CustomDoseDialog(title: l.customDoseTitle, unit: substance.unit),
     );
-    if (value != null) setState(() => _amount = value);
+    if (value != null) setState(() => _choice = (amount: value));
   }
 
-  Future<void> _log(Substance substance, double amount) async {
+  Future<void> _log(Substance substance, double? amount) async {
     final l = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final service = ref.read(intakeServiceProvider);
@@ -100,14 +104,18 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
     if (mounted) {
       setState(() {
         _at = null;
-        _amount = null;
+        _choice = null;
       });
     }
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(l.intakeLogged(l.dose(amount, substance.unit))),
+          content: Text(
+            amount == null
+                ? l.intakeLoggedNoDose
+                : l.intakeLogged(l.dose(amount, substance.unit)),
+          ),
           action: SnackBarAction(
             label: l.undo,
             onPressed: () => service.delete(id),
@@ -133,11 +141,13 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
     final theme = Theme.of(context);
     final now = _now();
     final last = intakes.firstOrNull;
-    final selected = _amount ?? last?.amount ?? doses.firstOrNull?.amount;
+    final DoseChoice selected =
+        _choice ??
+        (amount: last != null ? last.amount : doses.firstOrNull?.amount);
     final amounts = <double>{
       for (final d in doses) d.amount,
       ?last?.amount,
-      ?selected,
+      ?selected.amount,
     }.toList()..sort();
 
     final at = _at;
@@ -155,7 +165,7 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
             ),
             Flexible(
               child: Text(
-                '${substance.name}, ${substance.unit}',
+                nameWithUnit(substance),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -220,11 +230,19 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
+                    ChoiceChip(
+                      key: const Key('noDose'),
+                      label: Text(l.noDose),
+                      selected: selected.amount == null,
+                      onSelected: (_) =>
+                          setState(() => _choice = (amount: null)),
+                    ),
                     for (final amount in amounts)
                       ChoiceChip(
                         label: Text(l.dose(amount, substance.unit)),
-                        selected: amount == selected,
-                        onSelected: (_) => setState(() => _amount = amount),
+                        selected: amount == selected.amount,
+                        onSelected: (_) =>
+                            setState(() => _choice = (amount: amount)),
                       ),
                     ActionChip(
                       avatar: const Icon(Icons.add, size: 18),
@@ -240,9 +258,7 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
                     minimumSize: const Size.fromHeight(56),
                     textStyle: theme.textTheme.titleMedium,
                   ),
-                  onPressed: selected == null
-                      ? null
-                      : () => _log(substance, selected),
+                  onPressed: () => _log(substance, selected.amount),
                   child: Text(l.logButton),
                 ),
                 const SizedBox(height: 32),
@@ -305,7 +321,9 @@ class _CustomDoseDialogState extends State<_CustomDoseDialog> {
         controller: _controller,
         autofocus: true,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: InputDecoration(suffixText: widget.unit),
+        decoration: InputDecoration(
+          suffixText: widget.unit.isEmpty ? null : widget.unit,
+        ),
         onChanged: (_) => setState(() {}),
         onSubmitted: (_) {
           if (value != null) Navigator.pop(context, value);

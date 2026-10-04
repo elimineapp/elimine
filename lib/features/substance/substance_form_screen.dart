@@ -189,9 +189,8 @@ class _SubstanceFormScreenState extends ConsumerState<SubstanceFormScreen> {
                   TextFormField(
                     key: const Key('unitField'),
                     controller: _unit,
+                    // Optional: some substances are tracked without doses.
                     decoration: InputDecoration(labelText: l.fieldUnit),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? l.requiredField : null,
                   ),
                   const SizedBox(height: 8),
                   Wrap(

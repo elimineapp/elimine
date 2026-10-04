@@ -11,11 +11,12 @@ class IntakeService {
   final AppDatabase db;
   final DateTime Function() _clock;
 
-  /// Logs an intake and returns its id. [takenAt] defaults to now; a future
-  /// time is clamped to now.
+  /// Logs an intake and returns its id. A null [amount] records the intake
+  /// without a dose. [takenAt] defaults to now; a future time is clamped to
+  /// now.
   Future<String> log({
     required String substanceId,
-    required double amount,
+    required double? amount,
     DateTime? takenAt,
   }) async {
     final now = _clock();
@@ -28,7 +29,7 @@ class IntakeService {
           IntakesCompanion.insert(
             id: Value(id),
             substanceId: substanceId,
-            amount: amount,
+            amount: Value(amount),
             takenAt: at,
             tzOffsetMin: at.timeZoneOffset.inMinutes,
           ),

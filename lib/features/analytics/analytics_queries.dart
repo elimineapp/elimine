@@ -6,8 +6,13 @@ typedef DailyTotal = ({
   /// Local calendar day at the moment of intake, `YYYY-MM-DD`.
   String day,
   String substanceId,
+
+  /// Sum of the known doses; intakes without a dose add nothing.
   double total,
   int count,
+
+  /// Intakes with a dose; `count - dosed` had none.
+  int dosed,
 });
 
 extension AnalyticsQueries on AppDatabase {
@@ -22,7 +27,8 @@ extension AnalyticsQueries on AppDatabase {
     return customSelect(
       '''
       SELECT strftime('%Y-%m-%d', taken_at + tz_offset_min * 60, 'unixepoch') AS day,
-             substance_id, SUM(amount) AS total, COUNT(*) AS count
+             substance_id, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count,
+             COUNT(amount) AS dosed
       FROM intakes
       WHERE deleted_at IS NULL
         AND (?1 IS NULL OR taken_at >= ?1)
@@ -40,6 +46,7 @@ extension AnalyticsQueries on AppDatabase {
             substanceId: row.read<String>('substance_id'),
             total: row.read<double>('total'),
             count: row.read<int>('count'),
+            dosed: row.read<int>('dosed'),
           ),
       ],
     );

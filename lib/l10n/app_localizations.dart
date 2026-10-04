@@ -206,6 +206,12 @@ abstract class AppLocalizations {
   /// **'Custom'**
   String get customDose;
 
+  /// No description provided for @noDose.
+  ///
+  /// In en, this message translates to:
+  /// **'No dose'**
+  String get noDose;
+
   /// No description provided for @customDoseTitle.
   ///
   /// In en, this message translates to:
@@ -223,6 +229,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logged {dose}'**
   String intakeLogged(String dose);
+
+  /// No description provided for @intakeLoggedNoDose.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged'**
+  String get intakeLoggedNoDose;
 
   /// No description provided for @intakeDeleted.
   ///
@@ -403,6 +415,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily average, {unit}'**
   String doseChartDailyAverage(String unit);
+
+  /// No description provided for @doseChartPerDayNoUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Per day'**
+  String get doseChartPerDayNoUnit;
+
+  /// No description provided for @doseChartDailyAverageNoUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily average'**
+  String get doseChartDailyAverageNoUnit;
+
+  /// No description provided for @tooltipWithoutDose.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, other{{count} without dose}}'**
+  String tooltipWithoutDose(int count);
 
   /// No description provided for @metricTotal.
   ///

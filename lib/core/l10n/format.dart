@@ -15,11 +15,22 @@ int calendarDaysBetween(DateTime day, DateTime now) => DateTime.utc(
   now.day,
 ).difference(DateTime.utc(day.year, day.month, day.day)).inDays;
 
+/// "Caffeine, mg", or just "Caffeine" for a substance without a unit.
+String nameWithUnit(Substance substance) => substance.unit.isEmpty
+    ? substance.name
+    : '${substance.name}, ${substance.unit}';
+
 extension ElimineFormat on AppLocalizations {
   String amount(double value) =>
       NumberFormat.decimalPattern(localeName).format(value);
 
-  String dose(double value, String unit) => '${amount(value)} $unit';
+  /// "250 mg", or just "2" for a substance without a unit.
+  String dose(double value, String unit) =>
+      unit.isEmpty ? amount(value) : '${amount(value)} $unit';
+
+  /// [dose], or "No dose" for an intake without one.
+  String optionalDose(double? value, String unit) =>
+      value == null ? noDose : dose(value, unit);
 
   /// "today", "yesterday", "12 days ago", "2 months ago", "1 year ago".
   String relativeDay(DateTime day, DateTime now) {

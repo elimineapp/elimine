@@ -57,7 +57,7 @@ class IntakeTile extends ConsumerWidget {
         title: Text(title ?? time),
         subtitle: title == null ? null : Text(time),
         trailing: Text(
-          l.dose(intake.amount, unit),
+          l.optionalDose(intake.amount, unit),
           style: Theme.of(context).textTheme.bodyLarge,
         ),
       ),

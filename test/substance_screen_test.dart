@@ -7,6 +7,7 @@ import 'package:elimine/features/substance/substance_screen.dart';
 import 'package:elimine/l10n/app_localizations.dart';
 import 'package:elimine/services/intake_service.dart';
 import 'package:elimine/services/substance_service.dart';
+import 'package:elimine/widgets/intake_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,7 +35,7 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<void> pumpScreen(WidgetTester tester) async {
+  Future<void> pumpScreen(WidgetTester tester, {String? substanceId}) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(db)],
@@ -42,7 +43,10 @@ void main() {
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: SubstanceScreen(substanceId: id, clock: () => now),
+          home: SubstanceScreen(
+            substanceId: substanceId ?? id,
+            clock: () => now,
+          ),
         ),
       ),
     );
@@ -126,6 +130,58 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(isSelected(tester, '12.5 mg'), isTrue);
+    await finish(tester);
+  });
+
+  testWidgets('a last intake without a dose preselects "No dose"', (
+    tester,
+  ) async {
+    await tester.runAsync(
+      () => IntakeService(db)
+          .log(substanceId: id, amount: null, takenAt: DateTime(2026, 9, 20)),
+    );
+    await pumpScreen(tester);
+    expect(isSelected(tester, 'No dose'), isTrue);
+    expect(isSelected(tester, '100 mg'), isFalse);
+    await tester.scrollUntilVisible(
+      find.byType(IntakeTile),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(IntakeTile),
+        matching: find.text('No dose'),
+      ),
+      findsOneWidget,
+    );
+    await finish(tester);
+  });
+
+  testWidgets('a substance without doses or unit logs without a dose', (
+    tester,
+  ) async {
+    final bare = (await tester.runAsync(
+      () => SubstanceService(db).create((
+        name: 'Tea',
+        unit: '',
+        color: 'green',
+        icon: 'coffee',
+        doses: const [],
+      )),
+    ))!;
+    await pumpScreen(tester, substanceId: bare);
+    expect(find.text('Tea'), findsOneWidget);
+    expect(isSelected(tester, 'No dose'), isTrue);
+
+    await tester.tap(find.byKey(const Key('logButton')));
+    await tester.pumpAndSettle();
+
+    final intake = (await tester.runAsync(
+      () => db.watchIntakesFor(bare).first,
+    ))!.single;
+    expect(intake.amount, isNull);
+    expect(find.text('Logged'), findsOneWidget);
     await finish(tester);
   });
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
+import '../../core/db/database.dart';
 import '../../core/db/queries.dart';
 import '../../core/l10n/format.dart';
 import '../../l10n/app_localizations.dart';
@@ -107,10 +108,11 @@ class _SubstanceTile extends StatelessWidget {
     final theme = Theme.of(context);
     final (:substance, :last) = item;
     final lastLabel = switch (last) {
-      final last? =>
-        '${l.dose(last.amount, substance.unit)} · '
-            '${l.relativeDay(intakeWallTime(last), DateTime.now())}',
       null => l.neverLogged,
+      Intake(:final amount) => [
+        if (amount != null) l.dose(amount, substance.unit),
+        l.relativeDay(intakeWallTime(last), DateTime.now()),
+      ].join(' · '),
     };
 
     return Card.filled(
@@ -126,7 +128,7 @@ class _SubstanceTile extends StatelessWidget {
               SubstanceBadge(color: substance.color, icon: substance.icon),
               const Spacer(),
               Text(
-                '${substance.name}, ${substance.unit}',
+                nameWithUnit(substance),
                 style: theme.textTheme.titleSmall,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

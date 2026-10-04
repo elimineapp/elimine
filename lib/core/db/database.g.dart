@@ -854,9 +854,9 @@ class $IntakesTable extends Intakes with TableInfo<$IntakesTable, Intake> {
   late final GeneratedColumn<double> amount = GeneratedColumn<double>(
     'amount',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.double,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _takenAtMeta = const VerificationMeta(
     'takenAt',
@@ -957,8 +957,6 @@ class $IntakesTable extends Intakes with TableInfo<$IntakesTable, Intake> {
         _amountMeta,
         amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
       );
-    } else if (isInserting) {
-      context.missing(_amountMeta);
     }
     if (data.containsKey('taken_at')) {
       context.handle(
@@ -1017,7 +1015,7 @@ class $IntakesTable extends Intakes with TableInfo<$IntakesTable, Intake> {
       amount: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}amount'],
-      )!,
+      ),
       takenAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}taken_at'],
@@ -1050,7 +1048,9 @@ class $IntakesTable extends Intakes with TableInfo<$IntakesTable, Intake> {
 class Intake extends DataClass implements Insertable<Intake> {
   final String id;
   final String substanceId;
-  final double amount;
+
+  /// Null when the dose is unknown: the fact of the intake still counts.
+  final double? amount;
 
   /// Stored as unix seconds (UTC). Together with [tzOffsetMin] this gives the
   /// local wall-clock time at the moment of intake, independent of where the
@@ -1063,7 +1063,7 @@ class Intake extends DataClass implements Insertable<Intake> {
   const Intake({
     required this.id,
     required this.substanceId,
-    required this.amount,
+    this.amount,
     required this.takenAt,
     required this.tzOffsetMin,
     required this.createdAt,
@@ -1075,7 +1075,9 @@ class Intake extends DataClass implements Insertable<Intake> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['substance_id'] = Variable<String>(substanceId);
-    map['amount'] = Variable<double>(amount);
+    if (!nullToAbsent || amount != null) {
+      map['amount'] = Variable<double>(amount);
+    }
     map['taken_at'] = Variable<DateTime>(takenAt);
     map['tz_offset_min'] = Variable<int>(tzOffsetMin);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -1090,7 +1092,9 @@ class Intake extends DataClass implements Insertable<Intake> {
     return IntakesCompanion(
       id: Value(id),
       substanceId: Value(substanceId),
-      amount: Value(amount),
+      amount: amount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amount),
       takenAt: Value(takenAt),
       tzOffsetMin: Value(tzOffsetMin),
       createdAt: Value(createdAt),
@@ -1109,7 +1113,7 @@ class Intake extends DataClass implements Insertable<Intake> {
     return Intake(
       id: serializer.fromJson<String>(json['id']),
       substanceId: serializer.fromJson<String>(json['substanceId']),
-      amount: serializer.fromJson<double>(json['amount']),
+      amount: serializer.fromJson<double?>(json['amount']),
       takenAt: serializer.fromJson<DateTime>(json['takenAt']),
       tzOffsetMin: serializer.fromJson<int>(json['tzOffsetMin']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -1123,7 +1127,7 @@ class Intake extends DataClass implements Insertable<Intake> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'substanceId': serializer.toJson<String>(substanceId),
-      'amount': serializer.toJson<double>(amount),
+      'amount': serializer.toJson<double?>(amount),
       'takenAt': serializer.toJson<DateTime>(takenAt),
       'tzOffsetMin': serializer.toJson<int>(tzOffsetMin),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -1135,7 +1139,7 @@ class Intake extends DataClass implements Insertable<Intake> {
   Intake copyWith({
     String? id,
     String? substanceId,
-    double? amount,
+    Value<double?> amount = const Value.absent(),
     DateTime? takenAt,
     int? tzOffsetMin,
     DateTime? createdAt,
@@ -1144,7 +1148,7 @@ class Intake extends DataClass implements Insertable<Intake> {
   }) => Intake(
     id: id ?? this.id,
     substanceId: substanceId ?? this.substanceId,
-    amount: amount ?? this.amount,
+    amount: amount.present ? amount.value : this.amount,
     takenAt: takenAt ?? this.takenAt,
     tzOffsetMin: tzOffsetMin ?? this.tzOffsetMin,
     createdAt: createdAt ?? this.createdAt,
@@ -1211,7 +1215,7 @@ class Intake extends DataClass implements Insertable<Intake> {
 class IntakesCompanion extends UpdateCompanion<Intake> {
   final Value<String> id;
   final Value<String> substanceId;
-  final Value<double> amount;
+  final Value<double?> amount;
   final Value<DateTime> takenAt;
   final Value<int> tzOffsetMin;
   final Value<DateTime> createdAt;
@@ -1232,7 +1236,7 @@ class IntakesCompanion extends UpdateCompanion<Intake> {
   IntakesCompanion.insert({
     this.id = const Value.absent(),
     required String substanceId,
-    required double amount,
+    this.amount = const Value.absent(),
     required DateTime takenAt,
     required int tzOffsetMin,
     this.createdAt = const Value.absent(),
@@ -1240,7 +1244,6 @@ class IntakesCompanion extends UpdateCompanion<Intake> {
     this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : substanceId = Value(substanceId),
-       amount = Value(amount),
        takenAt = Value(takenAt),
        tzOffsetMin = Value(tzOffsetMin);
   static Insertable<Intake> custom({
@@ -1270,7 +1273,7 @@ class IntakesCompanion extends UpdateCompanion<Intake> {
   IntakesCompanion copyWith({
     Value<String>? id,
     Value<String>? substanceId,
-    Value<double>? amount,
+    Value<double?>? amount,
     Value<DateTime>? takenAt,
     Value<int>? tzOffsetMin,
     Value<DateTime>? createdAt,
@@ -2114,7 +2117,7 @@ typedef $$DosesTableProcessedTableManager =
 typedef $$IntakesTableCreateCompanionBuilder = IntakesCompanion Function({
   Value<String> id,
   required String substanceId,
-  required double amount,
+  Value<double?> amount,
   required DateTime takenAt,
   required int tzOffsetMin,
   Value<DateTime> createdAt,
@@ -2125,7 +2128,7 @@ typedef $$IntakesTableCreateCompanionBuilder = IntakesCompanion Function({
 typedef $$IntakesTableUpdateCompanionBuilder = IntakesCompanion Function({
   Value<String> id,
   Value<String> substanceId,
-  Value<double> amount,
+  Value<double?> amount,
   Value<DateTime> takenAt,
   Value<int> tzOffsetMin,
   Value<DateTime> createdAt,
@@ -2378,7 +2381,7 @@ class $$IntakesTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> substanceId = const Value.absent(),
-                Value<double> amount = const Value.absent(),
+                Value<double?> amount = const Value.absent(),
                 Value<DateTime> takenAt = const Value.absent(),
                 Value<int> tzOffsetMin = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -2400,7 +2403,7 @@ class $$IntakesTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 required String substanceId,
-                required double amount,
+                Value<double?> amount = const Value.absent(),
                 required DateTime takenAt,
                 required int tzOffsetMin,
                 Value<DateTime> createdAt = const Value.absent(),

@@ -2,8 +2,19 @@ import 'package:elimine/features/analytics/analytics.dart';
 import 'package:elimine/features/analytics/analytics_queries.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-DailyTotal row(String day, String id, {double total = 1, int count = 1}) =>
-    (day: day, substanceId: id, total: total, count: count);
+DailyTotal row(
+  String day,
+  String id, {
+  double total = 1,
+  int count = 1,
+  int? dosed,
+}) => (
+  day: day,
+  substanceId: id,
+  total: total,
+  count: count,
+  dosed: dosed ?? count,
+);
 
 void main() {
   // A Tuesday.
@@ -42,6 +53,17 @@ void main() {
     );
     // September is not over: 29 days so far.
     expect(a.buckets.last.elapsedDays(a.today), 29);
+  });
+
+  test('buckets keep intakes without a dose apart from dose sums', () {
+    final a = Analytics.build(AnalyticsRange.twoWeeks, [
+      row('2026-09-29', 'x', total: 250, count: 3, dosed: 1),
+    ], today: today);
+    final last = a.buckets.last;
+    expect(last.totalFor('x'), 250);
+    expect(last.countFor('x'), 3);
+    expect(last.undosedFor('x'), 2);
+    expect(a.buckets.first.undosedFor('x'), 0);
   });
 
   test('all years starts at the first intake year', () {
