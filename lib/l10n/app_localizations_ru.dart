@@ -110,6 +110,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get intakeDeleted => 'Запись удалена';
 
   @override
+  String get editIntakeTitle => 'Изменить запись';
+
+  @override
+  String get intakeUpdated => 'Запись изменена';
+
+  @override
   String get undo => 'Отменить';
 
   @override

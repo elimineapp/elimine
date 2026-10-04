@@ -33,6 +33,8 @@
   "@intakeLogged": { "placeholders": { "dose": { "type": "String" } } },
   "intakeLoggedNoDose": "Logged",
   "intakeDeleted": "Entry deleted",
+  "editIntakeTitle": "Edit entry",
+  "intakeUpdated": "Entry updated",
   "undo": "Undo",
   "cancel": "Cancel",
   "ok": "OK",

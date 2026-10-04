@@ -236,6 +236,18 @@ abstract class AppLocalizations {
   /// **'Entry deleted'**
   String get intakeDeleted;
 
+  /// No description provided for @editIntakeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit entry'**
+  String get editIntakeTitle;
+
+  /// No description provided for @intakeUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry updated'**
+  String get intakeUpdated;
+
   /// No description provided for @undo.
   ///
   /// In en, this message translates to:

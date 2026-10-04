@@ -99,4 +99,33 @@ void main() {
 
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('tapping a "Recent" entry opens its edit sheet', (tester) async {
+    await tester.runAsync(() async {
+      final id = await SubstanceService(db).create((
+        name: 'Coffee',
+        unit: 'mg',
+        color: 'amber',
+        icon: 'coffee',
+        doses: const [250],
+      ));
+      await IntakeService(db).log(substanceId: id, amount: 250);
+    });
+
+    await pumpHome(tester);
+    await tester.ensureVisible(find.byType(IntakeTile));
+    await tester.tap(find.byType(IntakeTile));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit entry'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.text('Coffee'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(const SizedBox());
+  });
 }

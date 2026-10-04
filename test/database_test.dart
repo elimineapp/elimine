@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:elimine/core/db/database.dart';
 import 'package:elimine/core/db/queries.dart';
+import 'package:elimine/core/l10n/format.dart';
 import 'package:elimine/features/analytics/analytics_queries.dart';
 import 'package:elimine/services/intake_service.dart';
 import 'package:elimine/services/settings_service.dart';
@@ -184,6 +185,111 @@ void main() {
         );
       },
     );
+  });
+
+  group('editing an intake', () {
+    final now = DateTime(2026, 9, 29, 12);
+    late IntakeService service;
+    late String substanceId;
+
+    setUp(() async {
+      service = IntakeService(db, clock: () => now);
+      substanceId = await create('A');
+    });
+
+    Future<Intake> single() async =>
+        (await db.watchIntakesFor(substanceId).first).single;
+
+    Future<Intake> logAt(DateTime at, double? amount) async {
+      await service.log(substanceId: substanceId, amount: amount, takenAt: at);
+      return single();
+    }
+
+    test('adds and clears a dose, keeping the time', () async {
+      final before = await logAt(DateTime(2026, 9, 28, 9, 10), null);
+
+      final wall = intakeWallTime(before);
+      expect(await service.edit(before, wallTime: wall, amount: 250), isTrue);
+      final dosed = await single();
+      expect(dosed.amount, 250);
+      expect(dosed.takenAt, before.takenAt);
+      expect(dosed.tzOffsetMin, before.tzOffsetMin);
+
+      expect(await service.edit(dosed, wallTime: wall, amount: null), isTrue);
+      expect((await single()).amount, isNull);
+    });
+
+    test('reads a new time in the zone the intake was logged in', () async {
+      // 23:30 in UTC+10, whatever the zone of the test machine.
+      await db
+          .into(db.intakes)
+          .insert(
+            IntakesCompanion.insert(
+              substanceId: substanceId,
+              amount: const Value(10),
+              takenAt: DateTime.utc(2026, 9, 1, 13, 30),
+              tzOffsetMin: 600,
+            ),
+          );
+      final before = await single();
+
+      await service.edit(
+        before,
+        wallTime: DateTime(2026, 8, 30, 22),
+        amount: 10,
+      );
+      final after = await single();
+      expect(after.tzOffsetMin, 600);
+      expect(intakeWallTime(after), DateTime.utc(2026, 8, 30, 22));
+    });
+
+    test(
+      '"Now" and a future time take the current moment and offset',
+      () async {
+        final before = await logAt(DateTime(2026, 9, 20, 8), 5);
+        final offset = now.timeZoneOffset.inMinutes;
+
+        await service.edit(before, wallTime: null, amount: 5);
+        var after = await single();
+        expect(after.takenAt, now);
+        expect(after.tzOffsetMin, offset);
+
+        await service.edit(
+          after,
+          wallTime: DateTime(2026, 9, 29, 15),
+          amount: 5,
+        );
+        after = await single();
+        expect(after.takenAt, now);
+        expect(after.tzOffsetMin, offset);
+      },
+    );
+
+    test('nothing changed: no write', () async {
+      final before = await logAt(DateTime(2026, 9, 28, 9, 10), 5);
+      final later = IntakeService(db, clock: () => DateTime(2026, 10, 1));
+
+      expect(
+        await later.edit(before, wallTime: intakeWallTime(before), amount: 5),
+        isFalse,
+      );
+      expect((await single()).updatedAt, before.updatedAt);
+    });
+
+    test('revert restores the previous time and dose', () async {
+      final before = await logAt(DateTime(2026, 9, 28, 9, 10), 5);
+
+      await service.edit(
+        before,
+        wallTime: DateTime(2026, 9, 25, 20),
+        amount: null,
+      );
+      await service.revert(before);
+      final after = await single();
+      expect(after.takenAt, before.takenAt);
+      expect(after.tzOffsetMin, before.tzOffsetMin);
+      expect(after.amount, 5);
+    });
   });
 
   test('daily totals group by the local day at the moment of intake', () async {

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../app/providers.dart';
 import '../core/db/database.dart';
 import '../core/l10n/format.dart';
+import '../app/providers.dart';
+import '../features/intake/delete_intake.dart';
+import '../features/intake/edit_intake_sheet.dart';
 import '../l10n/app_localizations.dart';
 
-/// One intake row. Swipe left soft-deletes it with an undo snackbar.
+/// One intake row. A tap opens the edit sheet; a swipe left soft-deletes it
+/// with an undo snackbar.
 class IntakeTile extends ConsumerWidget {
   const IntakeTile({
     super.key,
@@ -14,6 +17,7 @@ class IntakeTile extends ConsumerWidget {
     required this.unit,
     this.leading,
     this.title,
+    this.clock = DateTime.now,
   });
 
   final Intake intake;
@@ -22,11 +26,12 @@ class IntakeTile extends ConsumerWidget {
 
   /// Defaults to the intake time; the home screen shows the substance here.
   final String? title;
+  final DateTime Function() clock;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final time = l.intakeTime(intake, DateTime.now());
+    final time = l.intakeTime(intake, clock());
 
     return Dismissible(
       key: ValueKey(intake.id),
@@ -37,22 +42,14 @@ class IntakeTile extends ConsumerWidget {
         padding: const EdgeInsets.only(right: 24),
         child: const Icon(Icons.delete_outline),
       ),
-      onDismissed: (_) {
-        final service = ref.read(intakeServiceProvider);
-        service.delete(intake.id);
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(l.intakeDeleted),
-              action: SnackBarAction(
-                label: l.undo,
-                onPressed: () => service.restore(intake.id),
-              ),
-            ),
-          );
-      },
+      onDismissed: (_) => deleteIntake(
+        ref.read(intakeServiceProvider),
+        ScaffoldMessenger.of(context),
+        l,
+        intake.id,
+      ),
       child: ListTile(
+        onTap: () => showEditIntakeSheet(context, ref, intake, clock: clock),
         leading: leading,
         title: Text(title ?? time),
         subtitle: title == null ? null : Text(time),

@@ -28,6 +28,8 @@
   "intakeLogged": "Записано: {dose}",
   "intakeLoggedNoDose": "Записано",
   "intakeDeleted": "Запись удалена",
+  "editIntakeTitle": "Изменить запись",
+  "intakeUpdated": "Запись изменена",
   "undo": "Отменить",
   "cancel": "Отмена",
   "ok": "ОК",

@@ -107,6 +107,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get intakeDeleted => 'Entry deleted';
 
   @override
+  String get editIntakeTitle => 'Edit entry';
+
+  @override
+  String get intakeUpdated => 'Entry updated';
+
+  @override
   String get undo => 'Undo';
 
   @override
