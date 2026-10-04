@@ -56,7 +56,7 @@ Under "Dose", the substance screen SHALL show a chip for each dose of the substa
 - **THEN** a 1.5 dose is selected
 
 ### Requirement: Logging
-The "Log" button SHALL record an intake with the selected dose, or without a dose when no dose is selected, at the selected time. It SHALL always be enabled. After logging, the device SHALL vibrate, the user SHALL stay on the substance screen, the intake SHALL appear first in the history, a snackbar SHALL offer "Undo", and the time SHALL reset to "Now".
+The "Log" button SHALL record an intake with the selected dose, or without a dose when no dose is selected, at the selected time. It SHALL always be enabled. After logging, the device SHALL vibrate, the time SHALL reset to "Now" and a snackbar SHALL offer "Undo". When the substance screen is collapsed, it SHALL close and the snackbar SHALL appear on Home. When it is expanded, the user SHALL stay on it and the intake SHALL appear first in the history.
 
 #### Scenario: Logging an intake
 - **WHEN** the user taps "Log" with 250 mg selected
@@ -71,6 +71,16 @@ The "Log" button SHALL record an intake with the selected dose, or without a dos
 #### Scenario: Undo logging
 - **WHEN** the user taps "Undo" in that snackbar
 - **THEN** the intake disappears from history and analytics
+
+#### Scenario: Logging from the collapsed screen
+- **WHEN** the substance screen is collapsed and the user taps "Log"
+- **THEN** the substance screen closes
+- **AND** Home shows the snackbar and the substance's tile shows the new intake
+
+#### Scenario: Logging from the expanded screen
+- **WHEN** the substance screen is expanded and the user taps "Log"
+- **THEN** the substance screen stays open and expanded
+- **AND** the intake appears first in its history and the snackbar shows on the substance screen
 
 ### Requirement: Substance history
 The substance screen SHALL list all intakes of the substance, newest first, under "History", or "Nothing logged yet" without intakes. Every intake list SHALL show the dose of each intake that has one, and nothing in its place for an intake without one.

@@ -364,4 +364,43 @@ class Analytics {
   }
 }
 
+/// How many calendar weeks the strip on a Home tile covers.
+const markedWeeks = 12;
+
+/// Marks of a substance without intakes in the marked weeks.
+final List<int> noWeekMarks = List.unmodifiable(List.filled(markedWeeks, 0));
+
+/// The first day of the oldest of the [markedWeeks] calendar weeks that end
+/// with the week containing [today].
+DateTime markedWeeksStart(
+  DateTime today, {
+  int firstWeekday = DateTime.monday,
+}) => AnalyticsPeriod.current(
+  AnalyticsRange.week,
+  today,
+  firstWeekday: firstWeekday,
+).back(markedWeeks - 1).start;
+
+/// How many intakes, with or without a dose, each substance in [rows] had
+/// in each of the [markedWeeks] calendar weeks ending with the one that
+/// contains [today], oldest first. Substances without such intakes are left
+/// out; read them as [noWeekMarks].
+Map<String, List<int>> weekMarks(
+  List<DailyTotal> rows,
+  DateTime today, {
+  int firstWeekday = DateTime.monday,
+}) {
+  final day = _date(today);
+  final start = markedWeeksStart(today, firstWeekday: firstWeekday);
+  final marks = <String, List<int>>{};
+  for (final r in rows) {
+    if (r.count == 0) continue;
+    final d = DateTime.parse('${r.day}T00:00:00Z');
+    if (d.isBefore(start) || d.isAfter(day)) continue;
+    final week = d.difference(start).inDays ~/ 7;
+    (marks[r.substanceId] ??= List.filled(markedWeeks, 0))[week] += r.count;
+  }
+  return marks;
+}
+
 DateTime _date(DateTime d) => DateTime.utc(d.year, d.month, d.day);

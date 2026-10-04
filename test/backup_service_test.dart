@@ -5,6 +5,7 @@ import 'package:elimine/core/db/queries.dart';
 import 'package:elimine/features/backup/backup_format.dart';
 import 'package:elimine/features/backup/backup_service.dart';
 import 'package:elimine/services/intake_service.dart';
+import 'package:elimine/services/settings_service.dart';
 import 'package:elimine/services/substance_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -73,6 +74,18 @@ void main() {
     // Same data in the same order, archive state and offsets included.
     expect(await backup(target).export(), json);
     expect(await target.select(target.intakes).get(), hasLength(3));
+  });
+
+  test('device settings stay out of backups', () async {
+    await fill(source);
+    await SettingsService(source).setWeekStart(DateTime.sunday);
+    await SettingsService(source).setSheetExpanded();
+    final json = await backup(source).export();
+    await backup(target).apply(await backup(target).plan(decode(json)));
+
+    expect(json, isNot(contains('sheetExpanded')));
+    expect(json, isNot(contains('weekStart')));
+    expect(await target.select(target.settings).get(), isEmpty);
   });
 
   test('importing the same file again adds nothing', () async {

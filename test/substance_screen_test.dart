@@ -35,7 +35,17 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<void> pumpScreen(WidgetTester tester, {String? substanceId}) async {
+  /// Pumps the substance screen on its own and, unless [expanded] is false,
+  /// pulls it up to the full screen with the chart and history.
+  Future<void> pumpScreen(
+    WidgetTester tester, {
+    String? substanceId,
+    bool expanded = true,
+  }) async {
+    // A phone-sized screen, so the collapsed sheet fits its logging block.
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(db)],
@@ -51,6 +61,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    if (expanded) {
+      await tester.tap(find.byKey(const Key('chartAndHistory')));
+      await tester.pumpAndSettle();
+    }
   }
 
   bool isSelected(WidgetTester tester, String label) => tester

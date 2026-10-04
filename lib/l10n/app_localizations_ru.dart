@@ -13,7 +13,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get appTitle => 'Elimine';
 
   @override
-  String get newSubstanceTile => 'Новое';
+  String get newSubstanceTile => 'Новое вещество';
 
   @override
   String get recentTitle => 'Последние';
@@ -23,6 +23,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get emptyIntakes => 'Записей пока нет';
+
+  @override
+  String get chartAndHistory => 'График и история';
+
+  @override
+  String get collapse => 'Свернуть';
 
   @override
   String get neverLogged => 'Ещё не было';

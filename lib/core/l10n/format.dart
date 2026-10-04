@@ -50,6 +50,16 @@ extension ElimineFormat on AppLocalizations {
   String intakeTime(Intake intake, DateTime now) =>
       dayAndTime(intakeWallTime(intake), now);
 
+  /// The last intake of a substance: "250 mg · 12 days ago", only the day
+  /// when it had no dose, or "Not logged yet".
+  String lastIntake(Intake? last, String unit, DateTime now) => switch (last) {
+    null => neverLogged,
+    Intake(:final amount) => [
+      if (amount != null) dose(amount, unit),
+      relativeDay(intakeWallTime(last), now),
+    ].join(' · '),
+  };
+
   List<String> get unitSuggestionList => unitSuggestions.split(',');
 }
 

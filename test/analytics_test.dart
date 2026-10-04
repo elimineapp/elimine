@@ -219,4 +219,67 @@ void main() {
     expect(s.maxDay, isNull);
     expect(s.busiest, isNull);
   });
+
+  group('week marks', () {
+    List<int> marksOf(List<DailyTotal> rows, {int first = DateTime.monday}) =>
+        weekMarks(rows, today, firstWeekday: first)['x'] ?? noWeekMarks;
+    List<int> filled(List<int> marks) => [
+      for (var i = 0; i < marks.length; i++)
+        if (marks[i] > 0) i,
+    ];
+
+    test('cover 12 calendar weeks ending with the current one', () {
+      expect(markedWeeksStart(today), DateTime.utc(2026, 7, 13));
+      expect(
+        markedWeeksStart(today, firstWeekday: DateTime.sunday),
+        DateTime.utc(2026, 7, 19),
+      );
+    });
+
+    test('an intake today fills the last mark', () {
+      expect(filled(marksOf([row('2026-10-04', 'x')])), [11]);
+    });
+
+    test('an intake twelve days ago fills the previous week', () {
+      // Tuesday 22 September, weeks from Monday.
+      expect(filled(marksOf([row('2026-09-22', 'x')])), [10]);
+    });
+
+    test('weeks follow the chosen first day', () {
+      // Saturday 3 October ends the week before when weeks start on Sunday.
+      final rows = [row('2026-10-03', 'x')];
+      expect(filled(marksOf(rows)), [11]);
+      expect(filled(marksOf(rows, first: DateTime.sunday)), [10]);
+    });
+
+    test('an intake without a dose counts', () {
+      final rows = [row('2026-10-01', 'x', total: 0, dosed: 0)];
+      expect(filled(marksOf(rows)), [11]);
+    });
+
+    test('the oldest week is included, anything before it is not', () {
+      final rows = [row('2026-07-12', 'x'), row('2026-07-13', 'x')];
+      expect(filled(marksOf(rows)), [0]);
+      expect(filled(marksOf([row('2026-07-12', 'x')])), isEmpty);
+    });
+
+    test('count the intakes of every day in a week', () {
+      final marks = marksOf([
+        row('2026-09-28', 'x', count: 2),
+        row('2026-10-01', 'x', count: 1, dosed: 0),
+        row('2026-10-04', 'x', count: 3),
+        row('2026-09-22', 'x'),
+      ]);
+      expect(marks[11], 6);
+      expect(marks[10], 1);
+      expect(marks.take(10), everyElement(0));
+    });
+
+    test('a substance without intakes has no filled marks', () {
+      final marks = weekMarks([row('2026-10-04', 'y')], today);
+      expect(marks['x'] ?? noWeekMarks, hasLength(markedWeeks));
+      expect(filled(marks['x'] ?? noWeekMarks), isEmpty);
+      expect(filled(marks['y']!), [11]);
+    });
+  });
 }

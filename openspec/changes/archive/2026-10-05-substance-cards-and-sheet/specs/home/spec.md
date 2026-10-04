@@ -1,21 +1,6 @@
-# home Specification
+# Spec Delta
 
-## Purpose
-The start screen: one tap from any active substance and an overview of the latest intakes across all substances.
-
-## Requirements
-
-### Requirement: Header
-Home SHALL show the app name and the current date in its header, and no other actions. Settings is reached through the bottom navigation bar.
-
-#### Scenario: Header content
-- **WHEN** Home is open
-- **THEN** the header shows "Elimine" and today's date in the current locale
-
-#### Scenario: Opening Settings
-- **WHEN** Home is open
-- **THEN** its header has no settings action
-- **AND** Settings is opened through "Settings" in the bottom navigation bar
+## MODIFIED Requirements
 
 ### Requirement: Substance tiles
 Home SHALL show every active (not archived) substance as a full-width tile in a single column, in the user's substance order. A tile SHALL be tinted with the substance color and SHALL show the substance icon on a circle filled with that color, the name without the unit on up to two lines, and the last intake as its dose and a relative day ("today", "yesterday", "12 days ago", "2 months ago"), or only the relative day when that intake had no dose. A substance without intakes SHALL show "Not logged yet". Tapping a tile SHALL open the substance screen.
@@ -55,27 +40,7 @@ The last item of the substance list SHALL be a "New substance" row, which opens 
 - **WHEN** the app starts with no data
 - **THEN** Home shows only the "New substance" row
 
-### Requirement: Recent intakes
-Home SHALL list the 10 most recent intakes across all substances under "Recent", newest first, each with its date and time, substance and dose. Tapping an entry SHALL open its edit sheet and swiping it away SHALL delete it, as defined by the intake-logging capability.
-
-#### Scenario: Recent list
-- **WHEN** intakes of several substances exist
-- **THEN** "Recent" shows the latest 10 of them, newest first
-
-#### Scenario: Editing from Recent
-- **WHEN** the user taps an entry under "Recent"
-- **THEN** the "Edit entry" sheet for that intake opens on Home
-
-### Requirement: Archive entry
-When at least one substance is archived, Home SHALL end with an "Archive (N)" row, N being the number of archived substances, that opens the archive screen. Without archived substances the row SHALL NOT be shown.
-
-#### Scenario: Archived substances exist
-- **WHEN** two substances are archived
-- **THEN** Home ends with "Archive (2)", which opens the archive screen
-
-#### Scenario: Nothing archived
-- **WHEN** no substance is archived
-- **THEN** Home shows no archive row
+## ADDED Requirements
 
 ### Requirement: Intake weeks on a tile
 Each substance tile SHALL show a strip of 12 marks for the 12 calendar weeks ending with the current week, oldest on the left. A mark SHALL be filled with the substance color when the substance had at least one intake that week, with or without a dose, and SHALL be empty otherwise. A filled mark SHALL be faint for one intake, stronger for two and in the full substance color for three or more. Weeks SHALL start on the day chosen in Settings, and an intake SHALL count in the week of its local day.

@@ -3,10 +3,12 @@
 
   "appTitle": "Elimine",
 
-  "newSubstanceTile": "Новое",
+  "newSubstanceTile": "Новое вещество",
   "recentTitle": "Последние",
   "historyTitle": "История",
   "emptyIntakes": "Записей пока нет",
+  "chartAndHistory": "График и история",
+  "collapse": "Свернуть",
   "neverLogged": "Ещё не было",
 
   "relativeToday": "сегодня",

@@ -3,10 +3,12 @@
 
   "appTitle": "Elimine",
 
-  "newSubstanceTile": "New",
+  "newSubstanceTile": "New substance",
   "recentTitle": "Recent",
   "historyTitle": "History",
   "emptyIntakes": "Nothing logged yet",
+  "chartAndHistory": "Chart and history",
+  "collapse": "Collapse",
   "neverLogged": "Not logged yet",
 
   "relativeToday": "today",

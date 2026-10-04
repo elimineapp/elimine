@@ -13,7 +13,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Elimine';
 
   @override
-  String get newSubstanceTile => 'New';
+  String get newSubstanceTile => 'New substance';
 
   @override
   String get recentTitle => 'Recent';
@@ -23,6 +23,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyIntakes => 'Nothing logged yet';
+
+  @override
+  String get chartAndHistory => 'Chart and history';
+
+  @override
+  String get collapse => 'Collapse';
 
   @override
   String get neverLogged => 'Not logged yet';

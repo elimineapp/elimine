@@ -63,11 +63,12 @@ The edit screen SHALL offer "Archive" with a confirmation. An archived substance
 - **AND** its intakes still count in Analytics
 
 ### Requirement: After creation
-After a new substance is saved, the app SHALL open its substance screen in place of the form, so the first intake can be logged right away.
+After a new substance is saved, the app SHALL return to Home and open that substance's screen collapsed in place of the form, so the first intake can be logged right away.
 
 #### Scenario: Saving a new substance
 - **WHEN** the user saves a new substance
-- **THEN** its substance screen opens and going back returns to Home
+- **THEN** Home shows with the new substance's screen open and collapsed
+- **AND** closing it leaves Home with the new substance's tile
 
 ### Requirement: Deleting a substance
 The edit screen SHALL offer "Delete". It SHALL ask for confirmation, naming the substance and the number of its entries and stating that this cannot be undone. On confirmation the substance, its doses and all its intakes SHALL be removed, the app SHALL return to Home and show a snackbar naming the deleted substance. Deleted intakes SHALL disappear from "Recent", history and analytics.

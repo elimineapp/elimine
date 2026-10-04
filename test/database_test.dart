@@ -385,4 +385,13 @@ void main() {
     expect(await settings.watchWeekStart().first, DateTime.monday);
     expect(await db.select(db.settings).get(), hasLength(1));
   });
+
+  test('a substance screen counts as expanded once it has been', () async {
+    final settings = SettingsService(db);
+    expect(await settings.watchSheetExpanded().first, isFalse);
+    await settings.setSheetExpanded();
+    expect(await settings.watchSheetExpanded().first, isTrue);
+    await settings.setSheetExpanded();
+    expect(await db.select(db.settings).get(), hasLength(1));
+  });
 }

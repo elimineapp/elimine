@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @newSubstanceTile.
   ///
   /// In en, this message translates to:
-  /// **'New'**
+  /// **'New substance'**
   String get newSubstanceTile;
 
   /// No description provided for @recentTitle.
@@ -127,6 +127,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing logged yet'**
   String get emptyIntakes;
+
+  /// No description provided for @chartAndHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart and history'**
+  String get chartAndHistory;
+
+  /// No description provided for @collapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get collapse;
 
   /// No description provided for @neverLogged.
   ///

@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
-import '../../core/db/database.dart';
+import '../../core/appearance.dart';
 import '../../core/db/queries.dart';
 import '../../core/l10n/format.dart';
+import '../analytics/analytics.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/intake_tile.dart';
 import '../../widgets/substance_badge.dart';
@@ -21,6 +22,7 @@ class HomeScreen extends ConsumerWidget {
     final substances = ref.watch(substancesProvider);
     final intakes = ref.watch(recentIntakesProvider);
     final archived = ref.watch(archivedSubstancesProvider).value ?? const [];
+    final marks = ref.watch(weekMarksProvider);
     final today = DateFormat.MMMMEEEEd(l.localeName).format(DateTime.now());
 
     return Scaffold(
@@ -44,16 +46,14 @@ class HomeScreen extends ConsumerWidget {
           switch (substances) {
             AsyncData(value: final items) => SliverPadding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              sliver: SliverGrid.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisExtent: 124,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
+              sliver: SliverList.separated(
                 itemCount: items.length + 1,
+                separatorBuilder: (context, i) => const SizedBox(height: 8),
                 itemBuilder: (context, i) => i < items.length
-                    ? _SubstanceTile(item: items[i])
+                    ? _SubstanceTile(
+                        item: items[i],
+                        weeks: marks[items[i].substance.id] ?? noWeekMarks,
+                      )
                     : const _NewSubstanceTile(),
               ),
             ),
@@ -112,49 +112,68 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
+/// A substance in its color: icon, name, last intake and the weeks it was
+/// taken in.
 class _SubstanceTile extends StatelessWidget {
-  const _SubstanceTile({required this.item});
+  const _SubstanceTile({required this.item, required this.weeks});
 
   final SubstanceWithLast item;
+
+  /// Intakes in each of the [markedWeeks] weeks, oldest first.
+  final List<int> weeks;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final (:substance, :last) = item;
-    final lastLabel = switch (last) {
-      null => l.neverLogged,
-      Intake(:final amount) => [
-        if (amount != null) l.dose(amount, substance.unit),
-        l.relativeDay(intakeWallTime(last), DateTime.now()),
-      ].join(' · '),
-    };
+    final color = context.substanceColorOf(substance.color);
+    final dark = theme.brightness == Brightness.dark;
+    final lastLabel = l.lastIntake(last, substance.unit, DateTime.now());
 
-    return Card.filled(
-      margin: EdgeInsets.zero,
+    return Material(
+      color: color.withValues(alpha: dark ? 0.22 : 0.14),
+      borderRadius: BorderRadius.circular(20),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => context.push('/substance/${substance.id}'),
         child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+          child: Row(
+            spacing: 14,
             children: [
-              SubstanceBadge(color: substance.color, icon: substance.icon),
-              const Spacer(),
-              Text(
-                substance.name,
-                style: theme.textTheme.titleSmall,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              SubstanceBadge(
+                color: substance.color,
+                icon: substance.icon,
+                filled: true,
               ),
-              Text(
-                lastLabel,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      substance.name,
+                      style: theme.textTheme.titleMedium,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      lastLabel,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    _WeekStrip(
+                      weeks: weeks,
+                      color: color,
+                      empty: theme.colorScheme.outlineVariant,
+                    ),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -164,25 +183,61 @@ class _SubstanceTile extends StatelessWidget {
   }
 }
 
+/// One rounded mark per week, in [color] when the substance was taken that
+/// week: faint for one intake, stronger for two, full for three or more.
+class _WeekStrip extends StatelessWidget {
+  const _WeekStrip({
+    required this.weeks,
+    required this.color,
+    required this.empty,
+  });
+
+  final List<int> weeks;
+  final Color color;
+  final Color empty;
+
+  Color _shade(int intakes) => switch (intakes) {
+    0 => empty,
+    1 => color.withValues(alpha: 0.75),
+    2 => color.withValues(alpha: 0.875),
+    _ => color,
+  };
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: Row(
+      key: const Key('weekStrip'),
+      spacing: 3,
+      children: [
+        for (final intakes in weeks)
+          Expanded(
+            child: Container(
+              height: 6,
+              decoration: BoxDecoration(
+                color: _shade(intakes),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
 class _NewSubstanceTile extends StatelessWidget {
   const _NewSubstanceTile();
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return Card.outlined(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/substance/new'),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 4,
-            children: [const Icon(Icons.add), Text(l.newSubstanceTile)],
-          ),
-        ),
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(56),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
+      onPressed: () => context.push('/substance/new'),
+      icon: const Icon(Icons.add),
+      label: Text(l.newSubstanceTile),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/db/database.dart';
 import '../core/db/queries.dart';
+import '../features/analytics/analytics.dart';
 import '../features/analytics/analytics_queries.dart';
 import '../features/backup/backup_files.dart';
 import '../features/backup/backup_service.dart';
@@ -31,6 +32,11 @@ final settingsServiceProvider = Provider<SettingsService>(
 /// First day of the week for the charts, as a [DateTime.weekday].
 final weekStartProvider = StreamProvider<int>(
   (ref) => ref.watch(settingsServiceProvider).watchWeekStart(),
+);
+
+/// Whether a substance screen has ever been expanded on this device.
+final sheetExpandedProvider = StreamProvider<bool>(
+  (ref) => ref.watch(settingsServiceProvider).watchSheetExpanded(),
 );
 
 final backupServiceProvider = Provider<BackupService>(
@@ -96,3 +102,26 @@ final firstIntakeDayProvider = StreamProvider.family<DateTime?, String?>(
   (ref, substanceId) =>
       ref.watch(databaseProvider).watchFirstIntakeDay(substanceId: substanceId),
 );
+
+/// For the strips on Home: how many times each substance was taken in each
+/// of the last [markedWeeks] calendar weeks, oldest first. Missing
+/// substances have no intakes in that time.
+final weekMarksProvider = Provider<Map<String, List<int>>>((ref) {
+  final firstWeekday = ref.watch(weekStartProvider).value ?? DateTime.monday;
+  final today = DateTime.now();
+  final start = markedWeeksStart(today, firstWeekday: firstWeekday);
+  // Two days of margin for intakes logged in other time zones, as in
+  // AnalyticsPeriod.querySince; weekMarks trims by the local day.
+  final rows =
+      ref
+          .watch(
+            dailyTotalsProvider((
+              since: DateTime(start.year, start.month, start.day - 2),
+              until: null,
+              substanceId: null,
+            )),
+          )
+          .value ??
+      const [];
+  return weekMarks(rows, today, firstWeekday: firstWeekday);
+});
