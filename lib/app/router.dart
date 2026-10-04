@@ -1,31 +1,46 @@
 import 'package:go_router/go_router.dart';
 
+import '../features/analytics/analytics_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/substance/substance_form_screen.dart';
 import '../features/substance/substance_screen.dart';
+import 'shell.dart';
 
 final router = GoRouter(
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const HomeScreen(),
-      routes: [
-        // Declared before `:id` so "new" is not taken for an id.
-        GoRoute(
-          path: 'substance/new',
-          builder: (context, state) => const SubstanceFormScreen(),
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, shell) => AppShell(shell: shell),
+      branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+          ],
         ),
-        GoRoute(
-          path: 'substance/:id',
-          builder: (context, state) =>
-              SubstanceScreen(substanceId: state.pathParameters['id']!),
+        StatefulShellBranch(
           routes: [
             GoRoute(
-              path: 'edit',
-              builder: (context, state) =>
-                  SubstanceFormScreen(substanceId: state.pathParameters['id']),
+              path: '/analytics',
+              builder: (context, state) => const AnalyticsScreen(),
             ),
           ],
+        ),
+      ],
+    ),
+    // Outside the shell: substance screens cover the bottom navigation.
+    // `new` is declared before `:id` so it is not taken for an id.
+    GoRoute(
+      path: '/substance/new',
+      builder: (context, state) => const SubstanceFormScreen(),
+    ),
+    GoRoute(
+      path: '/substance/:id',
+      builder: (context, state) =>
+          SubstanceScreen(substanceId: state.pathParameters['id']!),
+      routes: [
+        GoRoute(
+          path: 'edit',
+          builder: (context, state) =>
+              SubstanceFormScreen(substanceId: state.pathParameters['id']),
         ),
       ],
     ),

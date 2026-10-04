@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/db/database.dart';
 import '../core/db/queries.dart';
+import '../features/analytics/analytics_queries.dart';
 import '../services/intake_service.dart';
 import '../services/substance_service.dart';
 
@@ -38,3 +39,16 @@ final dosesProvider = StreamProvider.family<List<Dose>, String>(
 final substanceIntakesProvider = StreamProvider.family<List<Intake>, String>(
   (ref, id) => ref.watch(databaseProvider).watchIntakesFor(id),
 );
+
+final allSubstancesProvider = StreamProvider<List<Substance>>(
+  (ref) => ref.watch(databaseProvider).watchAllSubstances(),
+);
+
+typedef DailyTotalsQuery = ({DateTime? since, String? substanceId});
+
+final dailyTotalsProvider =
+    StreamProvider.family<List<DailyTotal>, DailyTotalsQuery>(
+      (ref, q) => ref
+          .watch(databaseProvider)
+          .watchDailyTotals(since: q.since, substanceId: q.substanceId),
+    );

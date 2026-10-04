@@ -46,5 +46,27 @@
   "archiveConfirm": "Отправить «{name}» в архив? Вещество пропадёт с главной, история сохранится.",
   "unitChangedTitle": "Сменить единицу?",
   "unitChangedBody": "История не пересчитывается: у старых записей останутся те же числа с новой единицей.",
-  "change": "Сменить"
+  "change": "Сменить",
+
+  "navHome": "Главная",
+  "navAnalytics": "Аналитика",
+  "analyticsTitle": "Аналитика",
+  "rangeTwoWeeks": "2 нед",
+  "rangeMonth": "Месяц",
+  "rangeYear": "Год",
+  "rangeAllYears": "Все годы",
+  "intakesChartTitle": "Приёмов",
+  "doseChartPerDay": "За день, {unit}",
+  "doseChartDailyAverage": "В среднем за день, {unit}",
+  "metricTotal": "Всего приёмов",
+  "metricActiveDays": "Дней с приёмами",
+  "metricActiveDaysValue": "{active} из {total}",
+  "metricMaxDay": "Максимум за сутки",
+  "metricMaxDayValue": "{count} ({date})",
+  "metricBusiestWeekday": "Самый активный день недели",
+  "metricBusiestMonth": "Самый активный месяц",
+  "metricShare": "Доля приёмов",
+  "noDataInRange": "За этот период записей нет",
+  "archivedSuffix": "{name} (в архиве)",
+  "tooltipIntakes": "{count, plural, one{{count} приём} few{{count} приёма} many{{count} приёмов} other{{count} приёма}}"
 }

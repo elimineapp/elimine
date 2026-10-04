@@ -10,6 +10,7 @@ import '../../core/l10n/format.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/intake_tile.dart';
 import '../../widgets/substance_badge.dart';
+import 'substance_chart.dart';
 
 /// Logging block plus this substance's history. The usual flow is two taps:
 /// the tile on the home screen, then "Log" with the last dose preselected.
@@ -244,6 +245,8 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
                       : () => _log(substance, selected),
                   child: Text(l.logButton),
                 ),
+                const SizedBox(height: 32),
+                SubstanceChart(substance: substance, clock: widget.clock),
                 const SizedBox(height: 24),
                 Text(l.historyTitle, style: theme.textTheme.titleSmall),
                 if (intakes.isEmpty)

@@ -151,7 +151,7 @@ class _SubstanceFormScreenState extends ConsumerState<SubstanceFormScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final color = substanceColor(_color);
+    final color = context.substanceColorOf(_color);
 
     Widget section(String title) => Padding(
       padding: const EdgeInsets.only(top: 24, bottom: 8),
@@ -246,8 +246,7 @@ class _SubstanceFormScreenState extends ConsumerState<SubstanceFormScreen> {
                     spacing: 12,
                     runSpacing: 12,
                     children: [
-                      for (final MapEntry(:key, :value)
-                          in substanceColors.entries)
+                      for (final key in substanceColors.keys)
                         InkWell(
                           customBorder: const CircleBorder(),
                           onTap: () => setState(() => _color = key),
@@ -255,7 +254,7 @@ class _SubstanceFormScreenState extends ConsumerState<SubstanceFormScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: value,
+                              color: context.substanceColorOf(key),
                               shape: BoxShape.circle,
                               border: key == _color
                                   ? Border.all(

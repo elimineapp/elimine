@@ -136,6 +136,9 @@ void main() {
     final totals = await db
         .watchDailyTotals(since: DateTime.utc(2026, 8, 1))
         .first;
+    final other = await create('B');
+    await intakes.log(substanceId: other, amount: 1);
+    expect(await db.watchDailyTotals(substanceId: other).first, hasLength(1));
     expect(
       {for (final t in totals) t.day: (t.total, t.count)},
       {'2026-09-01': (10.0, 1), '2026-09-02': (20.0, 2)},

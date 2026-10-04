@@ -343,6 +343,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change'**
   String get change;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get navAnalytics;
+
+  /// No description provided for @analyticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get analyticsTitle;
+
+  /// No description provided for @rangeTwoWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'2 wk'**
+  String get rangeTwoWeeks;
+
+  /// No description provided for @rangeMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get rangeMonth;
+
+  /// No description provided for @rangeYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get rangeYear;
+
+  /// No description provided for @rangeAllYears.
+  ///
+  /// In en, this message translates to:
+  /// **'All years'**
+  String get rangeAllYears;
+
+  /// No description provided for @intakesChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Intakes'**
+  String get intakesChartTitle;
+
+  /// No description provided for @doseChartPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Per day, {unit}'**
+  String doseChartPerDay(String unit);
+
+  /// No description provided for @doseChartDailyAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily average, {unit}'**
+  String doseChartDailyAverage(String unit);
+
+  /// No description provided for @metricTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total intakes'**
+  String get metricTotal;
+
+  /// No description provided for @metricActiveDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Days with intakes'**
+  String get metricActiveDays;
+
+  /// No description provided for @metricActiveDaysValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{active} of {total}'**
+  String metricActiveDaysValue(int active, int total);
+
+  /// No description provided for @metricMaxDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Most in a day'**
+  String get metricMaxDay;
+
+  /// No description provided for @metricMaxDayValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ({date})'**
+  String metricMaxDayValue(int count, String date);
+
+  /// No description provided for @metricBusiestWeekday.
+  ///
+  /// In en, this message translates to:
+  /// **'Busiest weekday'**
+  String get metricBusiestWeekday;
+
+  /// No description provided for @metricBusiestMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Busiest month'**
+  String get metricBusiestMonth;
+
+  /// No description provided for @metricShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of intakes'**
+  String get metricShare;
+
+  /// No description provided for @noDataInRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing logged in this period'**
+  String get noDataInRange;
+
+  /// No description provided for @archivedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (archived)'**
+  String archivedSuffix(String name);
+
+  /// No description provided for @tooltipIntakes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} intake} other{{count} intakes}}'**
+  String tooltipIntakes(int count);
 }
 
 class _AppLocalizationsDelegate

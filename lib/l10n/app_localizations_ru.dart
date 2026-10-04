@@ -165,4 +165,87 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get change => 'Сменить';
+
+  @override
+  String get navHome => 'Главная';
+
+  @override
+  String get navAnalytics => 'Аналитика';
+
+  @override
+  String get analyticsTitle => 'Аналитика';
+
+  @override
+  String get rangeTwoWeeks => '2 нед';
+
+  @override
+  String get rangeMonth => 'Месяц';
+
+  @override
+  String get rangeYear => 'Год';
+
+  @override
+  String get rangeAllYears => 'Все годы';
+
+  @override
+  String get intakesChartTitle => 'Приёмов';
+
+  @override
+  String doseChartPerDay(String unit) {
+    return 'За день, $unit';
+  }
+
+  @override
+  String doseChartDailyAverage(String unit) {
+    return 'В среднем за день, $unit';
+  }
+
+  @override
+  String get metricTotal => 'Всего приёмов';
+
+  @override
+  String get metricActiveDays => 'Дней с приёмами';
+
+  @override
+  String metricActiveDaysValue(int active, int total) {
+    return '$active из $total';
+  }
+
+  @override
+  String get metricMaxDay => 'Максимум за сутки';
+
+  @override
+  String metricMaxDayValue(int count, String date) {
+    return '$count ($date)';
+  }
+
+  @override
+  String get metricBusiestWeekday => 'Самый активный день недели';
+
+  @override
+  String get metricBusiestMonth => 'Самый активный месяц';
+
+  @override
+  String get metricShare => 'Доля приёмов';
+
+  @override
+  String get noDataInRange => 'За этот период записей нет';
+
+  @override
+  String archivedSuffix(String name) {
+    return '$name (в архиве)';
+  }
+
+  @override
+  String tooltipIntakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count приёма',
+      many: '$count приёмов',
+      few: '$count приёма',
+      one: '$count приём',
+    );
+    return '$_temp0';
+  }
 }

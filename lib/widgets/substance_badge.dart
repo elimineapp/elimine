@@ -17,7 +17,7 @@ class SubstanceBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = substanceColor(color);
+    final c = context.substanceColorOf(color);
     return Container(
       width: size,
       height: size,
