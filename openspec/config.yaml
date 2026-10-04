@@ -1,0 +1,22 @@
+schema: spec-driven
+
+context: |
+  Elimine is an open-source Android app (Flutter) for tracking substance intake.
+  iOS may come later, so avoid Android-only behavior unless it is needed.
+  Write every artifact in English: all repository content is English. The UI is
+  localized: English is the template, Russian is a translation.
+  No server, no accounts, no sync, no network access: all data stays on the device.
+  Fewest taps wins. Logging an intake takes two taps; setup is rare and may take more.
+  The app ships no built-in substances or presets, only tools to create them.
+  Intakes are rare (days to months apart). Analytics looks at weeks, months and
+  years; there is no detail within a day.
+  Out of scope for now: route of administration, notes, a substance catalog,
+  unit conversion, intakes without a substance, a configurable start of day,
+  detail within a day.
+
+rules:
+  specs:
+    - Name UI elements by their English label, e.g. the "Log" button.
+  tasks:
+    - End with running `task check` (format, analyzer, tests).
+    - When the UI changes, include a manual check on a device or emulator.

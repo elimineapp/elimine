@@ -1,44 +1,35 @@
-# Elimine: план следующих итераций
+# Roadmap
 
-Порядок важен: пункты идут в той последовательности, в которой их делаем. Продуктовые решения после реализации переносятся в `spec.md`.
+Items are listed in the order they will be done. Each one becomes an OpenSpec change (`openspec/changes/`) when work on it starts; requirements live in `openspec/specs/`.
 
-## 1. Авторство коммитов (сделано)
+## 1. Optional dose
 
-Вся история и новые коммиты от `Elimine <elimine.app@gmail.com>`, без связи с личным аккаунтом.
+The fact of an intake is valuable even when the dose is forgotten. This goes before export so that the export format reflects the final schema.
 
-- В локальном конфиге репозитория заданы `user.name` и `user.email`.
-- Автор и коммиттер всех прежних коммитов переписаны, даты сохранены. Старые объекты удалены из репозитория.
-- В содержимом файлов истории упоминаний личных данных нет.
-- Открытый вопрос: даты коммитов содержат часовой пояс `+1000`; привести ли их к `+0000`.
-- Учесть при релизах: владелец ключа подписи, аккаунт в магазине, e-mail поддержки.
+- Schema: `intakes.amount` becomes nullable. This is the first migration: snapshot the schema (`task schema:dump`) before bumping `schemaVersion` and add a v1 → v2 migration test.
+- Substance screen: an intake can be logged without a dose (for example, a "No dose" chip, or tapping the selected dose again clears it). A substance without doses has no dose preselected.
+- Substance form: doses, and possibly the unit, become optional.
+- Display: "logged · 3 days ago" on a tile, "no dose" in history.
+- Analytics: intake counts include every entry. Dose charts sum only entries with a dose; decide how to show days that had intakes without a dose.
 
-## 2. Доза необязательна
+## 2. Data export and import
 
-Сам факт приёма ценен, даже если доза забыта. Делаем до экспорта, чтобы формат экспорта сразу отражал итоговую схему.
+The only way to keep history across devices or reinstalls: Android cloud backup is disabled.
 
-- Схема: `intakes.amount` становится nullable. Это первая миграция: перед повышением `schemaVersion` снять дамп (`task schema:dump`) и написать тест миграции v1 → v2.
-- Экран вещества: можно зафиксировать приём без выбранной дозы (например, чип «Без дозы» или повторный тап снимает выбор). Если дозировок у вещества нет, по умолчанию доза не выбрана.
-- Форма вещества: дозировки и, возможно, единица перестают быть обязательными.
-- Отображение: «приём · 3 дня назад» на плитке, «без дозы» в истории.
-- Аналитика: число приёмов учитывает все записи. Графики доз суммируют только записи с дозой; нужно решить, как показать дни, где были приёмы без дозы.
+- Format: a single JSON file with a format version. It holds substances (archived included), doses and intakes (soft-deleted included, so an import does not bring deleted entries back). `amount` may be `null`.
+- Export: an `elimine-YYYY-MM-DD.json` file saved through the system file picker or shared.
+- Import: pick a file, check its version, preview "N substances, M intakes", confirm. Records match by UUID, so importing the same file twice creates no duplicates.
+- Entry point: the Home header (the settings entry the spec already anticipates).
+- To decide: whether import merges with existing data or replaces it.
+- Tests: export then import into an empty database gives the same data; a repeated import adds no duplicates; an unknown format version is rejected.
 
-## 3. Экспорт и импорт данных
+## 3. Releases and publishing
 
-Это единственный способ сохранить историю: облачный бэкап Android отключён (`allowBackup=false`).
+Discussion first, no implementation yet.
 
-- Формат: один JSON-файл с полем версии формата. Содержимое: вещества (включая архивные), дозировки, приёмы (включая мягко удалённые, чтобы импорт не воскрешал удалённое). `amount` может быть `null`.
-- Экспорт: файл `elimine-YYYY-MM-DD.json`, сохранение через системный выбор места (SAF) или «Поделиться».
-- Импорт: выбор файла, проверка версии, превью «N веществ, M приёмов», подтверждение. Записи сопоставляются по UUID, поэтому повторный импорт того же файла не создаёт дублей.
-- Точка входа: шапка главной (вход в настройки, который спецификация уже предусматривает).
-- Решить: импорт объединяет данные с текущими или заменяет их.
-- Тесты: экспорт → импорт в пустую базу даёт те же данные; повторный импорт без дублей; файл неизвестной версии отклоняется.
-
-## 4. Релизы и публикация
-
-Обсуждение, без реализации на старте.
-
-- Каналы: Google Play (проверить политику для приложений, связанных с веществами), F-Droid, RuStore, APK в GitHub Releases.
-- Ключ подписи: создание, хранение, резервная копия (потеря ключа = невозможность обновлять приложение).
-- Версионирование (`version` в `pubspec.yaml`), changelog.
-- CI: сборка и проверки (`task check`) на каждый коммит, сборка релиза по тегу.
-- Политика конфиденциальности (обязательна для Google Play), иконка и скриншоты для магазина.
+- Channels: Google Play (check its policy for substance-related apps), F-Droid, RuStore, APKs in GitHub Releases.
+- Signing key: creation, storage, backup (losing it means the app can no longer be updated).
+- Versioning (`version` in `pubspec.yaml`) and a changelog.
+- CI: build and `task check` on every push, release builds on tags.
+- Privacy policy (required by Google Play), store icon and screenshots.
+- Signing key owner, store account and support e-mail under the Elimine identity.
