@@ -177,9 +177,13 @@ class _DoseChart {
     return averaged ? total / b.elapsedDays(analytics.today) : total;
   }
 
+  /// The intake count of a period with intakes without a dose, which its
+  /// dose sum leaves out.
   String? _note(Bucket b) {
-    final undosed = b.undosedFor(substance.id);
-    return counting || undosed == 0 ? null : l.tooltipWithoutDose(undosed);
+    final id = substance.id;
+    return counting || b.undosedFor(id) == 0
+        ? null
+        : l.tooltipIntakes(b.countFor(id));
   }
 
   Widget chart(BuildContext context) {

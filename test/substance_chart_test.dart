@@ -70,6 +70,16 @@ void main() {
     return tester.widget<BarChart>(find.byType(BarChart)).data;
   }
 
+  String tooltip(BarChartData data, BarChartGroupData group) {
+    final item = data.barTouchData.touchTooltipData.getTooltipItem(
+      group,
+      group.x,
+      group.barRods.last,
+      group.barRods.length - 1,
+    )!;
+    return [item.text, for (final c in item.children!) c.toPlainText()].join();
+  }
+
   Future<void> finish(WidgetTester tester) =>
       tester.pumpWidget(const SizedBox());
 
@@ -88,6 +98,10 @@ void main() {
     // Sunday has not come yet.
     expect(data.barGroups.last.barRods, hasLength(1));
     expect(data.barGroups.last.barRods.single.toY, 0);
+
+    // The tooltip counts intakes rather than naming the ones without a dose.
+    expect(tooltip(data, yesterday), 'Mon, Sep 28\n● 250 mg\n2 intakes');
+    expect(tooltip(data, today), 'Tue, Sep 29\n1 intake');
     await finish(tester);
   });
 

@@ -40,13 +40,9 @@ void main() {
     expect(ru.dose(0.25, 'г'), '0,25 г');
   });
 
-  test('doses without a unit or without a value', () async {
+  test('doses without a unit', () async {
     final en = await AppLocalizations.delegate.load(const Locale('en'));
-    final ru = await AppLocalizations.delegate.load(const Locale('ru'));
     expect(en.dose(2, ''), '2');
-    expect(en.optionalDose(250, 'mg'), '250 mg');
-    expect(en.optionalDose(null, 'mg'), 'No dose');
-    expect(ru.optionalDose(null, 'мг'), 'Без дозы');
   });
 
   test('parseAmount accepts a comma and rejects non-positive values', () {

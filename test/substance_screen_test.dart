@@ -133,7 +133,7 @@ void main() {
     await finish(tester);
   });
 
-  testWidgets('a last intake without a dose preselects "No dose"', (
+  testWidgets('a last intake without a dose preselects nothing', (
     tester,
   ) async {
     await tester.runAsync(
@@ -141,20 +141,41 @@ void main() {
           .log(substanceId: id, amount: null, takenAt: DateTime(2026, 9, 20)),
     );
     await pumpScreen(tester);
-    expect(isSelected(tester, 'No dose'), isTrue);
     expect(isSelected(tester, '100 mg'), isFalse);
+    expect(isSelected(tester, '200 mg'), isFalse);
     await tester.scrollUntilVisible(
       find.byType(IntakeTile),
       300,
       scrollable: find.byType(Scrollable).first,
     );
     expect(
-      find.descendant(
-        of: find.byType(IntakeTile),
-        matching: find.text('No dose'),
-      ),
-      findsOneWidget,
+      tester
+          .widget<ListTile>(
+            find.descendant(
+              of: find.byType(IntakeTile),
+              matching: find.byType(ListTile),
+            ),
+          )
+          .trailing,
+      isNull,
     );
+    await finish(tester);
+  });
+
+  testWidgets('tapping the selected dose clears it and logs no dose', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    await tester.tap(find.text('100 mg'));
+    await tester.pumpAndSettle();
+    expect(isSelected(tester, '100 mg'), isFalse);
+
+    await tester.tap(find.byKey(const Key('logButton')));
+    await tester.pumpAndSettle();
+
+    final intake = (await tester.runAsync(logged))!.single;
+    expect(intake.amount, isNull);
+    expect(find.text('Logged'), findsOneWidget);
     await finish(tester);
   });
 
@@ -172,7 +193,14 @@ void main() {
     ))!;
     await pumpScreen(tester, substanceId: bare);
     expect(find.text('Tea'), findsOneWidget);
-    expect(isSelected(tester, 'No dose'), isTrue);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('doses')),
+        matching: find.byType(ChoiceChip),
+      ),
+      findsNothing,
+    );
+    expect(find.widgetWithText(ActionChip, 'Custom'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('logButton')));
     await tester.pumpAndSettle();

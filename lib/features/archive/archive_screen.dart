@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../core/db/queries.dart';
-import '../../core/l10n/format.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/substance_badge.dart';
 import '../substance/delete_substance.dart';
@@ -52,7 +51,7 @@ class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
             final s = item.substance;
             return ListTile(
               leading: SubstanceBadge(color: s.color, icon: s.icon),
-              title: Text(nameWithUnit(s)),
+              title: Text(s.name),
               subtitle: Text(l.entriesCount(item.intakes)),
               trailing: PopupMenuButton<_Action>(
                 key: Key('archiveMenu-${s.id}'),

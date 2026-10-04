@@ -53,6 +53,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('unitField')),
+        matching: find.text('Unit of measure'),
+      ),
+      findsOneWidget,
+    );
+
     await tester.enterText(find.byKey(const Key('nameField')), 'Tea');
     await tester.enterText(find.byKey(const Key('doseField')), '2');
     await tester.tap(find.byKey(const Key('addDoseButton')));

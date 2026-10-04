@@ -151,7 +151,7 @@ class _SubstanceTile extends StatelessWidget {
               SubstanceBadge(color: substance.color, icon: substance.icon),
               const Spacer(),
               Text(
-                nameWithUnit(substance),
+                substance.name,
                 style: theme.textTheme.titleSmall,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

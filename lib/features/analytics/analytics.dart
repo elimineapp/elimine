@@ -72,7 +72,7 @@ class AnalyticsPeriod {
   const AnalyticsPeriod._(this.range, this.start, this.end, this.firstWeekday);
 
   /// The period of [range] that contains [today]. Weeks start on
-  /// [firstWeekday] ([DateTime.monday] or [DateTime.sunday]); "All years"
+  /// [firstWeekday] ([DateTime.monday] or [DateTime.sunday]); "All"
   /// starts in the year of [firstDay], or this year without intakes.
   factory AnalyticsPeriod.current(
     AnalyticsRange range,
@@ -132,7 +132,7 @@ class AnalyticsPeriod {
   final DateTime end;
   final int firstWeekday;
 
-  /// "All years" covers everything and cannot step.
+  /// "All" covers everything and cannot step.
   bool get steps => range != AnalyticsRange.allYears;
 
   AnalyticsPeriod get previous => switch (range) {

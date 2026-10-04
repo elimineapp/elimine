@@ -90,9 +90,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customDose => 'Custom';
 
   @override
-  String get noDose => 'No dose';
-
-  @override
   String get customDoseTitle => 'Custom dose';
 
   @override
@@ -128,7 +125,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldName => 'Name';
 
   @override
-  String get fieldUnit => 'Unit';
+  String get fieldUnit => 'Unit of measure';
 
   @override
   String get unitSuggestions => 'mg,g,ml,pcs,tab';
@@ -319,7 +316,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rangeYear => 'Year';
 
   @override
-  String get rangeAllYears => 'All years';
+  String get rangeAllYears => 'All';
 
   @override
   String get previousPeriod => 'Previous';
@@ -345,16 +342,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get doseChartDailyAverageNoUnit => 'Daily average';
-
-  @override
-  String tooltipWithoutDose(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count without dose',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get metricTotal => 'Total intakes';

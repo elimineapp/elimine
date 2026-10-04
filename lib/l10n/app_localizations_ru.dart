@@ -93,9 +93,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get customDose => 'Своя';
 
   @override
-  String get noDose => 'Без дозы';
-
-  @override
   String get customDoseTitle => 'Своя доза';
 
   @override
@@ -131,7 +128,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get fieldName => 'Название';
 
   @override
-  String get fieldUnit => 'Единица';
+  String get fieldUnit => 'Единица измерения';
 
   @override
   String get unitSuggestions => 'мг,г,мл,шт,таб';
@@ -330,7 +327,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rangeYear => 'Год';
 
   @override
-  String get rangeAllYears => 'Все годы';
+  String get rangeAllYears => 'Все';
 
   @override
   String get previousPeriod => 'Назад';
@@ -356,16 +353,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get doseChartDailyAverageNoUnit => 'В среднем за день';
-
-  @override
-  String tooltipWithoutDose(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count без дозы',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get metricTotal => 'Всего приёмов';

@@ -39,7 +39,7 @@ Bars SHALL start at a zero baseline, and periods without intakes SHALL remain as
 - **THEN** those days appear as empty slots
 
 ### Requirement: Tooltip on tap
-Tapping a bar SHALL pin a tooltip with its date or month, its value with the unit and, when the period had intakes without a dose, their number; tapping it again or elsewhere SHALL clear it.
+Tapping a bar SHALL pin a tooltip with its date or month, its value with the unit and, when the period had intakes without a dose, its number of intakes; tapping it again or elsewhere SHALL clear it. The tooltip SHALL NOT mention intakes "without dose".
 
 #### Scenario: Tapping a bar
 - **WHEN** the user taps a day bar with 250 mg
@@ -47,7 +47,11 @@ Tapping a bar SHALL pin a tooltip with its date or month, its value with the uni
 
 #### Scenario: Tapping a bar with intakes without a dose
 - **WHEN** the user taps a day with a 250 mg intake and one intake without a dose
-- **THEN** the tooltip shows that date, "250 mg" and "1 without dose"
+- **THEN** the tooltip shows that date, "250 mg" and "2 intakes"
+
+#### Scenario: Tapping a day with only intakes without a dose
+- **WHEN** the user taps the dot of a day with one intake, which had no dose
+- **THEN** the tooltip shows that date and "1 intake"
 
 ### Requirement: Intakes without a dose on the dose chart
 On the dose chart, every day (or month, for "Year") that had at least one intake without a dose SHALL show a dot just above its bar, or just above the baseline when it has no dose. Tapping that day SHALL show its tooltip like any bar.

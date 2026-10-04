@@ -26,8 +26,8 @@ class ChartBar {
   /// Bottom to top. One segment is a plain bar.
   final List<ChartSegment> segments;
 
-  /// Something the bar's value leaves out, e.g. "1 without dose": marked with
-  /// a dot above the bar and added as the last tooltip line.
+  /// Something the bar's value leaves out, e.g. "2 intakes" when some had no
+  /// dose: marked with a dot above the bar and added as the last tooltip line.
   final String? note;
 
   double get total => segments.fold(0, (sum, s) => sum + s.value);

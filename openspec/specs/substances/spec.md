@@ -13,7 +13,7 @@ The app SHALL NOT ship any built-in substances, doses or presets. Every substanc
 - **THEN** there are no substances
 
 ### Requirement: Substance fields
-A substance SHALL have a name (required), a unit (optional, free text), a color, an icon and a list of doses (positive numbers, possibly empty). Leading and trailing spaces SHALL be trimmed from the name and the unit. The unit field SHALL offer suggestion chips "mg", "g", "ml", "pcs", "tab" that fill it in one tap. Without a unit, doses SHALL be shown as plain numbers.
+A substance SHALL have a name (required), a unit (optional, free text), a color, an icon and a list of doses (positive numbers, possibly empty). Leading and trailing spaces SHALL be trimmed from the name and the unit. The unit field SHALL be labeled "Unit of measure" and SHALL offer suggestion chips "mg", "g", "ml", "pcs", "tab" that fill it in one tap. Without a unit, doses SHALL be shown as plain numbers.
 
 #### Scenario: Missing name or unit
 - **WHEN** the user saves the form with an empty name
@@ -27,6 +27,10 @@ A substance SHALL have a name (required), a unit (optional, free text), a color,
 #### Scenario: Unit suggestion
 - **WHEN** the user taps the "mg" suggestion
 - **THEN** the unit field contains "mg"
+
+#### Scenario: Unit field label
+- **WHEN** the user opens the new or edit substance form
+- **THEN** the unit field is labeled "Unit of measure"
 
 ### Requirement: Colors and icons from fixed sets
 The color SHALL be chosen from a fixed palette of 8 colors, each with a light-theme and a dark-theme shade, distinguishable from each other including under color vision deficiency. The icon SHALL be chosen from a fixed set. A new substance SHALL default to the first palette color not used by another active substance.

@@ -267,7 +267,7 @@ void main() {
 
   testWidgets('all years includes old intakes', (tester) async {
     await pumpScreen(tester);
-    await tester.tap(find.text('All years'));
+    await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
     expect(metric('Total intakes', '4'), findsOneWidget);
     expect(metric('Busiest month', 'September'), findsOneWidget);

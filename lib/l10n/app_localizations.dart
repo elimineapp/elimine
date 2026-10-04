@@ -206,12 +206,6 @@ abstract class AppLocalizations {
   /// **'Custom'**
   String get customDose;
 
-  /// No description provided for @noDose.
-  ///
-  /// In en, this message translates to:
-  /// **'No dose'**
-  String get noDose;
-
   /// No description provided for @customDoseTitle.
   ///
   /// In en, this message translates to:
@@ -281,7 +275,7 @@ abstract class AppLocalizations {
   /// No description provided for @fieldUnit.
   ///
   /// In en, this message translates to:
-  /// **'Unit'**
+  /// **'Unit of measure'**
   String get fieldUnit;
 
   /// Comma-separated unit suggestions shown under the unit field.
@@ -563,7 +557,7 @@ abstract class AppLocalizations {
   /// No description provided for @rangeAllYears.
   ///
   /// In en, this message translates to:
-  /// **'All years'**
+  /// **'All'**
   String get rangeAllYears;
 
   /// No description provided for @previousPeriod.
@@ -607,12 +601,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily average'**
   String get doseChartDailyAverageNoUnit;
-
-  /// No description provided for @tooltipWithoutDose.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, other{{count} without dose}}'**
-  String tooltipWithoutDose(int count);
 
   /// No description provided for @metricTotal.
   ///

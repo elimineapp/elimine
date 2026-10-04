@@ -18,13 +18,13 @@ void main() {
                 axisLabel: '',
                 tooltipTitle: 'Mon',
                 segments: [ChartSegment('X', red, 250)],
-                note: '1 without dose',
+                note: '2 intakes',
               ),
               ChartBar(
                 axisLabel: '',
                 tooltipTitle: 'Tue',
                 segments: [ChartSegment('X', red, 0)],
-                note: '2 without dose',
+                note: '2 intakes',
               ),
               ChartBar(
                 axisLabel: '',
@@ -64,8 +64,8 @@ void main() {
     }
 
     expect(tooltip(mixed), contains('250'));
-    expect(tooltip(mixed), endsWith('\n1 without dose'));
+    expect(tooltip(mixed), endsWith('\n2 intakes'));
     // No misleading zero when the day only had intakes without a dose.
-    expect(tooltip(undosedOnly), 'Tue\n2 without dose');
+    expect(tooltip(undosedOnly), 'Tue\n2 intakes');
   });
 }

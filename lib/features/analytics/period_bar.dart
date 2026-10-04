@@ -17,7 +17,7 @@ class PeriodBar extends StatelessWidget {
 
   final String label;
 
-  /// False for a period that cannot step, such as "All years".
+  /// False for a period that cannot step, such as "All".
   final bool arrows;
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;

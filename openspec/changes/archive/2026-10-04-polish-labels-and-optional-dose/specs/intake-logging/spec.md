@@ -1,28 +1,6 @@
-# intake-logging Specification
+# Spec Delta
 
-## Purpose
-Recording an intake of a substance in two taps, with an optional past time and dose, and correcting mistakes through deletion and undo.
-
-## Requirements
-
-### Requirement: Intake time
-The substance screen SHALL show the selected time, "Now (today, 14:35)" by default. Tapping it SHALL open a date picker, then a time picker. Chips "Now", "Yesterday" and "Day before" SHALL select the current moment or the same time of day one or two days back. Future times SHALL NOT be accepted: a later time is replaced by the current moment.
-
-#### Scenario: Default time
-- **WHEN** the user opens a substance screen at 14:35
-- **THEN** the time reads "Now (today, 14:35)"
-
-#### Scenario: Yesterday
-- **WHEN** the user taps "Yesterday" at 14:35
-- **THEN** the selected time is yesterday at 14:35
-
-#### Scenario: Picking a date and time
-- **WHEN** the user taps the time row, picks a date and then a time
-- **THEN** the selected time is that date and time
-
-#### Scenario: Future time
-- **WHEN** the user picks today at a time later than now
-- **THEN** the selected time is the current moment
+## MODIFIED Requirements
 
 ### Requirement: Dose selection
 Under "Dose", the substance screen SHALL show a chip for each dose of the substance, then a "Custom" chip that asks for a number. At most one dose SHALL be selected; tapping the selected dose chip again SHALL clear the selection, and no selection means the intake has no dose. The dose of the last intake SHALL be preselected, with an extra chip if it is not among the substance's doses, and nothing when it had no dose. With no intakes yet, the first dose SHALL be preselected, or nothing when the substance has no doses. A custom dose SHALL accept a comma or a period as the decimal separator and only positive numbers.
@@ -82,17 +60,3 @@ The substance screen SHALL list all intakes of the substance, newest first, unde
 #### Scenario: Intake without a dose in a list
 - **WHEN** an intake has no dose
 - **THEN** its entry in History and in "Recent" shows nothing where the dose would be and never reads "No dose"
-
-### Requirement: Deleting an intake
-Swiping an intake away in any list SHALL delete it and show a snackbar "Entry deleted" with "Undo", which restores it unchanged.
-
-#### Scenario: Delete and undo
-- **WHEN** the user swipes an intake away and taps "Undo"
-- **THEN** the intake is back with the same time and dose
-
-### Requirement: Local day of an intake
-Each intake SHALL remember the device time zone offset at the moment it happened. Everything that groups intakes by day SHALL use the local date at that moment, so traveling across time zones does not move past intakes to other days.
-
-#### Scenario: Time zone change
-- **WHEN** an intake was logged at 23:30 in UTC+10 and the device later moves to UTC+3
-- **THEN** the intake still counts on its original date
