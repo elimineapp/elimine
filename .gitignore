@@ -50,3 +50,6 @@ app.*.map.json
 # Local Task overrides of taskfile.dist.yaml
 /taskfile.yaml
 /.task/
+
+# Output of design/icon/source/gen.py
+design/icon/source/out/
