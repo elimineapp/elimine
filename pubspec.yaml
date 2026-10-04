@@ -6,7 +6,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 # Managed by release-please. No build number: the Android version code is
 # derived from this version in android/app/build.gradle.kts.
-version: 0.0.0
+version: 0.1.0
 
 environment:
   sdk: ^3.13.4
