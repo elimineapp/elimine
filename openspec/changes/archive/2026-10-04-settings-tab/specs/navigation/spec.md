@@ -1,9 +1,6 @@
-# navigation Specification
+# Spec Delta
 
-## Purpose
-How the user moves between the app's screens, keeping the daily path from launch to a logged intake short.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Bottom navigation
 The app SHALL show a bottom navigation bar with three destinations, in this order: "Settings", "Home" and "Analytics". The app SHALL open on "Home". Each destination SHALL keep its own state (such as scroll position and selected range) while the user switches between them.

@@ -40,6 +40,21 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('the header has no settings action', (tester) async {
+    await pumpHome(tester);
+
+    expect(find.byKey(const Key('settingsAction')), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byIcon(Icons.settings_outlined),
+      ),
+      findsNothing,
+    );
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('a tile shows the name without the unit', (tester) async {
     await tester.runAsync(() async {
       final id = await SubstanceService(db).create((

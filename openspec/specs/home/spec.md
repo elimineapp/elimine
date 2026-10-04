@@ -6,15 +6,16 @@ The start screen: one tap from any active substance and an overview of the lates
 ## Requirements
 
 ### Requirement: Header
-Home SHALL show the app name and the current date in its header, and a settings action that opens the Settings screen.
+Home SHALL show the app name and the current date in its header, and no other actions. Settings is reached through the bottom navigation bar.
 
 #### Scenario: Header content
 - **WHEN** Home is open
 - **THEN** the header shows "Elimine" and today's date in the current locale
 
 #### Scenario: Opening Settings
-- **WHEN** the user taps the settings action in the Home header
-- **THEN** the Settings screen opens
+- **WHEN** Home is open
+- **THEN** its header has no settings action
+- **AND** Settings is opened through "Settings" in the bottom navigation bar
 
 ### Requirement: Substance tiles
 Home SHALL show every active (not archived) substance as a tile in a two-column grid, in the user's substance order. A tile SHALL show the substance icon in its color, the name without the unit, and the last intake as its dose and a relative day ("today", "yesterday", "12 days ago", "2 months ago"), or only the relative day when that intake had no dose. A substance without intakes SHALL show "Not logged yet". Tapping a tile SHALL open the substance screen.
