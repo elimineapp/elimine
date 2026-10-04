@@ -115,10 +115,14 @@ jobs:
       - name: Signed with the release key
         run: |
           apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
-          actual=$("$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk \
-            | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          echo "Using $apksigner"
+          "$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk \
+            | tee "$RUNNER_TEMP/certs.txt"
+          # "Signer #1 ..." or "Signer (minSdkVersion=...) ...", depending on the
+          # build tools; every signer must carry the release certificate.
+          actual=$(sed -n 's/^Signer.* certificate SHA-256 digest: //p' "$RUNNER_TEMP/certs.txt" | sort -u)
           expected=$(tr -d ' :\n' < .github/release-cert.sha256 | tr 'A-F' 'a-f')
-          if [ -z "$actual" ] || [ "$actual" != "$expected" ]; then
+          if [ "$actual" != "$expected" ]; then
             echo "::error::APK certificate '$actual' does not match .github/release-cert.sha256"
             exit 1
           fi
