@@ -4,11 +4,12 @@ import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
 import '../../l10n/app_localizations.dart';
+import '../analytics/labels.dart';
 import 'backup_format.dart';
 import 'backup_service.dart';
 
-/// App settings: the backup (export to a file and import from one) and the
-/// installed version.
+/// App settings: the first day of the week, the backup (export to a file and
+/// import from one) and the installed version.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key, this.clock = DateTime.now});
 
@@ -138,10 +139,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Future<void> _chooseWeekStart(int current) async {
+    final l = AppLocalizations.of(context);
+    final chosen = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l.weekStart),
+        children: [
+          RadioGroup<int>(
+            groupValue: current,
+            onChanged: (day) => Navigator.pop(context, day),
+            child: Column(
+              children: [
+                for (final day in [DateTime.monday, DateTime.sunday])
+                  RadioListTile<int>(
+                    key: Key('weekStart-$day'),
+                    value: day,
+                    title: Text(l.weekdayTitle(day)),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (chosen != null && chosen != current) {
+      await ref.read(settingsServiceProvider).setWeekStart(chosen);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final weekStart = ref.watch(weekStartProvider).value ?? DateTime.monday;
+    Widget section(String title) => Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+      ),
+    );
     return Scaffold(
       appBar: AppBar(
         title: Text(l.settingsTitle),
@@ -154,15 +194,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              l.backupSection,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
+          section(l.generalSection),
+          ListTile(
+            key: const Key('weekStart'),
+            leading: const Icon(Icons.calendar_today_outlined),
+            title: Text(l.weekStart),
+            subtitle: Text(l.weekdayTitle(weekStart)),
+            onTap: () => _chooseWeekStart(weekStart),
           ),
+          section(l.backupSection),
           ListTile(
             key: const Key('export'),
             enabled: !_busy,

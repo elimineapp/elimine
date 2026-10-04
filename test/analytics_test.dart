@@ -17,47 +17,138 @@ DailyTotal row(
 );
 
 void main() {
-  // A Tuesday.
-  final today = DateTime(2026, 9, 29, 21, 30);
+  // Sunday 4 October 2026.
+  final today = DateTime(2026, 10, 4, 21, 30);
+  AnalyticsPeriod current(AnalyticsRange r, {int first = DateTime.monday}) =>
+      AnalyticsPeriod.current(r, today, firstWeekday: first);
 
-  test(
-    'two weeks: 14 continuous days, empty ones kept, older rows dropped',
-    () {
-      final a = Analytics.build(AnalyticsRange.twoWeeks, [
-        row('2026-09-15', 'x'), // one day before the window
-        row('2026-09-16', 'x', total: 10),
-        row('2026-09-29', 'x', total: 5, count: 2),
-        row('2026-09-29', 'y', total: 3),
-      ], today: today);
+  group('periods', () {
+    test('a week starts on Monday by default and on Sunday when chosen', () {
+      final monday = current(AnalyticsRange.week);
+      expect(monday.start, DateTime.utc(2026, 9, 28));
+      expect(monday.end, DateTime.utc(2026, 10, 5));
+      expect(monday.buckets.map((b) => b.start.day), [
+        28, 29, 30, 1, 2, 3, 4, //
+      ]);
 
-      expect(a.buckets, hasLength(14));
-      expect(a.buckets.first.start, DateTime.utc(2026, 9, 16));
-      expect(a.buckets.last.start, DateTime.utc(2026, 9, 29));
-      expect(a.buckets.first.totalFor('x'), 10);
-      expect(a.buckets.last.count, 3);
-      expect(a.buckets.where((b) => b.count == 0), hasLength(12));
-    },
-  );
+      final sunday = current(AnalyticsRange.week, first: DateTime.sunday);
+      expect(sunday.start, DateTime.utc(2026, 10, 4));
+      expect(sunday.end, DateTime.utc(2026, 10, 11));
+    });
 
-  test('year: 12 months across the new year, with daily averages', () {
-    final a = Analytics.build(AnalyticsRange.year, [
-      row('2025-10-01', 'x', total: 31),
-      row('2026-09-10', 'x', total: 29),
+    test('a week can span two years', () {
+      final p = AnalyticsPeriod.current(
+        AnalyticsRange.week,
+        DateTime(2026, 1, 1),
+      );
+      expect(p.start, DateTime.utc(2025, 12, 29));
+      expect(p.buckets.last.start, DateTime.utc(2026, 1, 4));
+      expect(p.previous.start, DateTime.utc(2025, 12, 22));
+    });
+
+    test('a month has a slot for each of its days', () {
+      expect(current(AnalyticsRange.month).buckets, hasLength(31));
+      final leap = AnalyticsPeriod.of(
+        AnalyticsRange.month,
+        DateTime.utc(2028, 2),
+      );
+      expect(leap.buckets, hasLength(29));
+      expect(
+        AnalyticsPeriod.of(AnalyticsRange.month, DateTime.utc(2026, 2)).buckets,
+        hasLength(28),
+      );
+    });
+
+    test('a year runs from January to December', () {
+      final p = current(AnalyticsRange.year);
+      expect(p.buckets.map((b) => b.start.month), [
+        for (var m = 1; m <= 12; m++) m,
+      ]);
+      expect(p.buckets.every((b) => b.start.year == 2026), isTrue);
+    });
+
+    test('stepping crosses year boundaries both ways', () {
+      final jan = AnalyticsPeriod.of(AnalyticsRange.month, DateTime.utc(2026));
+      expect(jan.previous.start, DateTime.utc(2025, 12));
+      expect(jan.previous.next, jan);
+      final y = current(AnalyticsRange.year);
+      expect(y.previous.start, DateTime.utc(2025));
+      expect(y.previous.end, DateTime.utc(2026));
+    });
+
+    test('stepping keeps the first weekday of every range', () {
+      for (final r in [
+        AnalyticsRange.week,
+        AnalyticsRange.month,
+        AnalyticsRange.year,
+      ]) {
+        final p = current(r, first: DateTime.sunday);
+        expect(p.firstWeekday, DateTime.sunday, reason: '$r');
+        expect(p.previous.firstWeekday, DateTime.sunday, reason: '$r');
+        expect(p.previous.next, p, reason: '$r');
+      }
+    });
+
+    test('next stops at the current period, previous at the first intake', () {
+      final month = current(AnalyticsRange.month);
+      expect(month.hasNext(today), isFalse);
+      expect(month.previous.hasNext(today), isTrue);
+      expect(month.hasPrevious(null), isFalse);
+      expect(month.hasPrevious(DateTime(2026, 10, 1)), isFalse);
+      expect(month.hasPrevious(DateTime(2026, 9, 30)), isTrue);
+      expect(month.previous.hasPrevious(DateTime(2026, 9, 30)), isFalse);
+    });
+
+    test('elapsed days count the days that have begun', () {
+      expect(current(AnalyticsRange.year).elapsedDays(today), 277);
+      expect(current(AnalyticsRange.month).elapsedDays(today), 4);
+      expect(current(AnalyticsRange.month).previous.elapsedDays(today), 30);
+      expect(current(AnalyticsRange.week).elapsedDays(today), 7);
+    });
+
+    test('all years runs from the first intake year and does not step', () {
+      final p = AnalyticsPeriod.current(
+        AnalyticsRange.allYears,
+        today,
+        firstDay: DateTime(2024, 5, 1),
+      );
+      expect([for (final b in p.buckets) b.start.year], [2024, 2025, 2026]);
+      expect(p.steps, isFalse);
+      expect(p.hasPrevious(DateTime(2020)), isFalse);
+      expect(p.querySince, isNull);
+    });
+  });
+
+  test('buckets: future days stay empty, rows outside the period drop', () {
+    final a = Analytics.build(current(AnalyticsRange.month), [
+      row('2026-09-30', 'x'), // the month before
+      row('2026-10-01', 'x', total: 10),
+      row('2026-10-04', 'x', total: 5, count: 2),
+      row('2026-10-04', 'y', total: 3),
     ], today: today);
 
-    expect(a.buckets.first.start, DateTime.utc(2025, 10));
-    expect(a.buckets.last.start, DateTime.utc(2026, 9));
+    expect(a.buckets, hasLength(31));
+    expect(a.buckets.first.totalFor('x'), 10);
+    expect(a.buckets[3].count, 3);
+    expect(a.buckets.skip(4).every((b) => b.count == 0), isTrue);
+  });
+
+  test('year buckets give daily averages over elapsed days', () {
+    final a = Analytics.build(current(AnalyticsRange.year), [
+      row('2026-01-10', 'x', total: 31),
+      row('2026-10-02', 'x', total: 8),
+    ], today: today);
     expect(
-      a.buckets.first.totalFor('x') / a.buckets.first.elapsedDays(a.today),
+      a.buckets.first.totalFor('x') / a.buckets.first.elapsedDays(today),
       1,
     );
-    // September is not over: 29 days so far.
-    expect(a.buckets.last.elapsedDays(a.today), 29);
+    // October is not over: 4 days so far.
+    expect(a.buckets[9].elapsedDays(a.today), 4);
   });
 
   test('buckets keep intakes without a dose apart from dose sums', () {
-    final a = Analytics.build(AnalyticsRange.twoWeeks, [
-      row('2026-09-29', 'x', total: 250, count: 3, dosed: 1),
+    final a = Analytics.build(current(AnalyticsRange.week), [
+      row('2026-10-04', 'x', total: 250, count: 3, dosed: 1),
     ], today: today);
     final last = a.buckets.last;
     expect(last.totalFor('x'), 250);
@@ -66,16 +157,8 @@ void main() {
     expect(a.buckets.first.undosedFor('x'), 0);
   });
 
-  test('all years starts at the first intake year', () {
-    final a = Analytics.build(AnalyticsRange.allYears, [
-      row('2024-05-01', 'x'),
-      row('2026-01-01', 'x'),
-    ], today: today);
-    expect([for (final b in a.buckets) b.start.year], [2024, 2025, 2026]);
-  });
-
   test('stats: totals, active days, max day, busiest weekday, shares', () {
-    final s = Analytics.build(AnalyticsRange.month, [
+    final s = Analytics.build(current(AnalyticsRange.month).previous, [
       row('2026-09-21', 'x', count: 2), // Monday
       row('2026-09-28', 'x', count: 2), // Monday
       row('2026-09-28', 'y', count: 2),
@@ -94,18 +177,22 @@ void main() {
     ]);
   });
 
+  test('a week has no busiest weekday', () {
+    final s = Analytics.build(current(AnalyticsRange.week), [
+      row('2026-10-01', 'x', count: 2),
+    ], today: today).stats();
+    expect(s.busiest, isNull);
+    expect((s.activeDays, s.periodDays), (1, 7));
+  });
+
   test('stats respect the visible filter and busiest month on long ranges', () {
     final rows = [
       row('2026-03-01', 'x', count: 3),
       row('2026-05-01', 'y', count: 5),
     ];
-    final all = Analytics.build(AnalyticsRange.year, rows, today: today);
-    final onlyX = Analytics.build(
-      AnalyticsRange.year,
-      rows,
-      today: today,
-      visible: {'x'},
-    );
+    final year = current(AnalyticsRange.year);
+    final all = Analytics.build(year, rows, today: today);
+    final onlyX = Analytics.build(year, rows, today: today, visible: {'x'});
 
     expect(all.stats().busiest?.by, BucketUnit.month);
     expect(all.stats().busiest?.indexes, [5]);
@@ -115,7 +202,7 @@ void main() {
   });
 
   test('ties list every busiest slot', () {
-    final s = Analytics.build(AnalyticsRange.month, [
+    final s = Analytics.build(current(AnalyticsRange.month).previous, [
       row('2026-09-24', 'x'), // Thursday
       row('2026-09-28', 'x'), // Monday
     ], today: today).stats();
@@ -124,7 +211,7 @@ void main() {
 
   test('empty data gives empty buckets and no highlights', () {
     final s = Analytics.build(
-      AnalyticsRange.allYears,
+      AnalyticsPeriod.current(AnalyticsRange.allYears, today),
       [],
       today: today,
     ).stats();

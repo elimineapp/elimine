@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import 'analytics.dart';
 import 'bar_chart.dart';
 import 'labels.dart';
+import 'period_bar.dart';
 
 /// Cross-substance view: intake counts, since units differ between
 /// substances and cannot be summed.
@@ -23,7 +24,28 @@ class AnalyticsScreen extends ConsumerStatefulWidget {
 
 class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
   AnalyticsRange _range = AnalyticsRange.month;
+
+  /// How many periods back from the current one the chart shows.
+  int _back = 0;
+  final _pages = PageController();
   final Set<String> _hidden = {};
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  void _goTo(int back) => _pages.animateToPage(
+    back,
+    duration: periodPageDuration,
+    curve: periodPageCurve,
+  );
+
+  void _toCurrent() {
+    setState(() => _back = 0);
+    if (_pages.hasClients) _pages.jumpToPage(0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +53,30 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     final theme = Theme.of(context);
     final now = widget.clock();
     final substances = {
-      for (final s in ref.watch(allSubstancesProvider).value ?? const [])
+      for (final s
+          in ref.watch(allSubstancesProvider).value ?? const <Substance>[])
         s.id: s,
     };
+    final weekStart = ref.watch(weekStartProvider).value ?? DateTime.monday;
+    final firstDay = ref.watch(firstIntakeDayProvider(null)).value;
+    final current = AnalyticsPeriod.current(
+      _range,
+      now,
+      firstWeekday: weekStart,
+      firstDay: firstDay,
+    );
+    final pages = current.pagesBackTo(firstDay);
+    final back = _back.clamp(0, pages - 1);
+    final period = current.back(back);
+    final onPrevious = back < pages - 1 ? () => _goTo(back + 1) : null;
+    final onNext = back > 0 ? () => _goTo(back - 1) : null;
+
     final rows =
         ref
             .watch(
               dailyTotalsProvider((
-                since: rangeQuerySince(_range, now),
+                since: period.querySince,
+                until: period.queryUntil,
                 substanceId: null,
               )),
             )
@@ -47,25 +85,21 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
     // Stack and list in palette order: neighbours there are validated to
     // stay distinguishable.
-    final present =
-        [
-          for (final id in Analytics.build(
-            _range,
-            rows,
-            today: now,
-          ).substanceIds)
-            ?substances[id],
-        ]..sort((a, b) {
-          final byColor = substanceColorOrder(a.color)
-              .compareTo(substanceColorOrder(b.color));
-          return byColor != 0 ? byColor : a.sortOrder.compareTo(b.sortOrder);
-        });
+    final present = <Substance>[
+      for (final id in Analytics.build(period, rows, today: now).substanceIds)
+        ?substances[id],
+    ]..sort(_byPalette);
     final visible = [
       for (final s in present)
         if (!_hidden.contains(s.id)) s,
     ];
+    // Neighbouring pages stack every shown substance in the same order.
+    final stacked = <Substance>[
+      for (final s in substances.values)
+        if (!_hidden.contains(s.id)) s,
+    ]..sort(_byPalette);
     final analytics = Analytics.build(
-      _range,
+      period,
       rows,
       today: now,
       visible: {for (final s in visible) s.id},
@@ -75,21 +109,46 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     String name(Substance s) =>
         s.archivedAt == null ? s.name : l.archivedSuffix(s.name);
 
-    final bars = [
-      for (final (i, bucket) in analytics.buckets.indexed)
-        ChartBar(
-          axisLabel: l.bucketAxisLabel(bucket, i, analytics.buckets.length),
-          tooltipTitle: l.bucketTitle(bucket),
-          segments: [
-            for (final s in visible)
-              ChartSegment(
-                name(s),
-                context.substanceColorOf(s.color),
-                (bucket.bySubstance[s.id]?.count ?? 0).toDouble(),
-              ),
-          ],
-        ),
-    ];
+    Widget chart(BuildContext context, int back) {
+      final p = current.back(back);
+      return Consumer(
+        builder: (context, ref, _) {
+          final rows =
+              ref
+                  .watch(
+                    dailyTotalsProvider((
+                      since: p.querySince,
+                      until: p.queryUntil,
+                      substanceId: null,
+                    )),
+                  )
+                  .value ??
+              const [];
+          final buckets = Analytics.build(p, rows, today: now).buckets;
+          return ElimineBarChart(
+            bars: [
+              for (final (i, bucket) in buckets.indexed)
+                ChartBar(
+                  axisLabel: l.bucketAxisLabel(bucket, i, buckets.length),
+                  tooltipTitle: l.bucketTitle(bucket),
+                  segments: [
+                    for (final s in stacked)
+                      if (bucket.countFor(s.id) > 0)
+                        ChartSegment(
+                          name(s),
+                          context.substanceColorOf(s.color),
+                          bucket.countFor(s.id).toDouble(),
+                        ),
+                  ],
+                ),
+            ],
+            integerValues: true,
+            formatValue: (v) => v.toInt().toString(),
+            formatTooltipValue: (v) => l.tooltipIntakes(v.toInt()),
+          );
+        },
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text(l.analyticsTitle)),
@@ -103,7 +162,18 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 ButtonSegment(value: r, label: Text(l.rangeLabel(r))),
             ],
             selected: {_range},
-            onSelectionChanged: (s) => setState(() => _range = s.single),
+            onSelectionChanged: (s) {
+              setState(() => _range = s.single);
+              _toCurrent();
+            },
+          ),
+          const SizedBox(height: 8),
+          PeriodBar(
+            label: l.periodTitle(period, now),
+            arrows: period.steps,
+            onPrevious: onPrevious,
+            onNext: onNext,
+            onToday: _toCurrent,
           ),
           if (present.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -129,12 +199,14 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           ],
           const SizedBox(height: 16),
           Text(l.intakesChartTitle, style: theme.textTheme.titleSmall),
-          const SizedBox(height: 8),
-          ElimineBarChart(
-            bars: bars,
-            integerValues: true,
-            formatValue: (v) => v.toInt().toString(),
-            formatTooltipValue: (v) => l.tooltipIntakes(v.toInt()),
+          PeriodPages(
+            // A new range starts its own set of pages.
+            key: ValueKey(_range),
+            controller: _pages,
+            count: pages,
+            height: 200,
+            onPageChanged: (back) => setState(() => _back = back),
+            itemBuilder: chart,
           ),
           if (stats.total == 0)
             Padding(
@@ -189,6 +261,12 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       ),
     );
   }
+}
+
+int _byPalette(Substance a, Substance b) {
+  final byColor = substanceColorOrder(a.color)
+      .compareTo(substanceColorOrder(b.color));
+  return byColor != 0 ? byColor : a.sortOrder.compareTo(b.sortOrder);
 }
 
 class _Metric extends StatelessWidget {

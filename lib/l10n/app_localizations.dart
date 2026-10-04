@@ -404,6 +404,18 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settingsTitle;
 
+  /// No description provided for @generalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get generalSection;
+
+  /// No description provided for @weekStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Week starts on'**
+  String get weekStart;
+
   /// No description provided for @backupSection.
   ///
   /// In en, this message translates to:
@@ -530,11 +542,11 @@ abstract class AppLocalizations {
   /// **'Analytics'**
   String get analyticsTitle;
 
-  /// No description provided for @rangeTwoWeeks.
+  /// No description provided for @rangeWeek.
   ///
   /// In en, this message translates to:
-  /// **'2 wk'**
-  String get rangeTwoWeeks;
+  /// **'Week'**
+  String get rangeWeek;
 
   /// No description provided for @rangeMonth.
   ///
@@ -553,6 +565,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All years'**
   String get rangeAllYears;
+
+  /// No description provided for @previousPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get previousPeriod;
+
+  /// No description provided for @nextPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get nextPeriod;
 
   /// No description provided for @intakesChartTitle.
   ///

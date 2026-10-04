@@ -1,9 +1,4 @@
-# analytics Specification
-
-## Purpose
-A retrospective across all substances over long periods, for comparing substances and spotting relations between them (for example, one substance appearing after a peak of another).
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Ranges
 Analytics SHALL offer the ranges "Week" (a calendar week, one bar per day), "Month" (a calendar month, one bar per day of the month), "Year" (a calendar year, one bar per month from January to December) and "All years" (from the year of the first intake to the current year, one bar per year). The week SHALL start on the day chosen in Settings (Monday by default). Analytics SHALL open on the current period of the selected range. Periods without intakes, including days or months that have not come yet, SHALL remain as empty bars.
@@ -24,21 +19,6 @@ Analytics SHALL offer the ranges "Week" (a calendar week, one bar per day), "Mon
 - **WHEN** the week start was never changed, "Week" is selected and today is Sunday 4 October
 - **THEN** the chart shows Monday 28 September to Sunday 4 October
 
-### Requirement: Substance filter chips
-Analytics SHALL show a chip for every substance with intakes in the selected range, archived ones included and marked "(archived)", ordered by palette color. The chips SHALL act as the legend. Tapping a chip SHALL hide or show that substance in the chart and the metrics without changing any colors.
-
-#### Scenario: Hiding a substance
-- **WHEN** the user taps the chip of a visible substance
-- **THEN** its segments and its intakes disappear from the chart and the metrics
-- **AND** the other substances keep their colors
-
-### Requirement: Stacked intake chart
-The chart SHALL count intakes, not doses, because units of different substances cannot be added. Each bar SHALL stack one segment per substance in its color, in palette order. Tapping a bar SHALL pin a tooltip with the period and the number of intakes per substance.
-
-#### Scenario: Two substances on one day
-- **WHEN** a day has 2 intakes of one substance and 1 of another
-- **THEN** that day's bar is 3 high with segments of 2 and 1
-
 ### Requirement: Period metrics
 For the displayed period and visible substances, Analytics SHALL show: total intakes; days with intakes out of the days of the period that have already begun (e.g. "3 of 4" on the 4th of a month, "22 of 30" for a past month); the most intakes in a day with its date; the busiest weekday (for "Month") or the busiest month (for "Year" and "All years"), listing all of them on a tie; and, when more than one substance is visible, each substance's share of intakes in percent. Without intakes in the period it SHALL show "Nothing logged in this period".
 
@@ -57,6 +37,8 @@ For the displayed period and visible substances, Analytics SHALL show: total int
 #### Scenario: No busiest weekday for a week
 - **WHEN** "Week" is selected
 - **THEN** no busiest weekday is shown
+
+## ADDED Requirements
 
 ### Requirement: First day of the week
 The Settings screen SHALL have a "Week starts on" row showing the chosen day, Monday by default. Tapping it SHALL offer Monday and Sunday; the choice SHALL apply at once to the "Week" range on Analytics and on the dose chart, and SHALL be kept on the device across restarts. It SHALL NOT be part of backup files.

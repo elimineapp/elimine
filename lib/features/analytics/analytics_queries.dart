@@ -18,10 +18,11 @@ typedef DailyTotal = ({
 extension AnalyticsQueries on AppDatabase {
   /// Sums per local day, where "local" is the phone's offset when the intake
   /// happened, so travelling does not shift past entries across midnight.
-  /// [since] is compared against the UTC instant, so callers pass a day of
-  /// margin and trim by `day`.
+  /// [since] and [until] (exclusive) are compared against the UTC instant, so
+  /// callers pass a day of margin and trim by `day`.
   Stream<List<DailyTotal>> watchDailyTotals({
     DateTime? since,
+    DateTime? until,
     String? substanceId,
   }) {
     return customSelect(
@@ -33,10 +34,15 @@ extension AnalyticsQueries on AppDatabase {
       WHERE deleted_at IS NULL
         AND (?1 IS NULL OR taken_at >= ?1)
         AND (?2 IS NULL OR substance_id = ?2)
+        AND (?3 IS NULL OR taken_at < ?3)
       GROUP BY day, substance_id
       ORDER BY day
       ''',
-      variables: [Variable<DateTime>(since), Variable<String>(substanceId)],
+      variables: [
+        Variable<DateTime>(since),
+        Variable<String>(substanceId),
+        Variable<DateTime>(until),
+      ],
       readsFrom: {intakes},
     ).watch().map(
       (rows) => [
@@ -50,6 +56,23 @@ extension AnalyticsQueries on AppDatabase {
           ),
       ],
     );
+  }
+
+  /// Local day of the first intake that was not deleted, of [substanceId] or
+  /// of any substance; null without intakes.
+  Stream<DateTime?> watchFirstIntakeDay({String? substanceId}) {
+    return customSelect(
+      '''
+      SELECT MIN(strftime('%Y-%m-%d', taken_at + tz_offset_min * 60, 'unixepoch')) AS day
+      FROM intakes
+      WHERE deleted_at IS NULL AND (?1 IS NULL OR substance_id = ?1)
+      ''',
+      variables: [Variable<String>(substanceId)],
+      readsFrom: {intakes},
+    ).watchSingle().map((row) {
+      final day = row.readNullable<String>('day');
+      return day == null ? null : DateTime.parse('${day}T00:00:00Z');
+    });
   }
 
   /// Every substance, archived ones included: their past intakes still show

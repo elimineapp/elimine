@@ -7,6 +7,7 @@ import 'package:elimine/features/backup/backup_format.dart';
 import 'package:elimine/features/backup/settings_screen.dart';
 import 'package:elimine/l10n/app_localizations.dart';
 import 'package:elimine/services/intake_service.dart';
+import 'package:elimine/services/settings_service.dart';
 import 'package:elimine/services/substance_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -210,6 +211,30 @@ void main() {
       ),
       findsOneWidget,
     );
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('week starts on Monday until Sunday is chosen', (tester) async {
+    await pumpSettings(tester);
+    final row = find.byKey(const Key('weekStart'));
+    expect(
+      find.descendant(of: row, matching: find.text('Monday')),
+      findsOneWidget,
+    );
+
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(Key('weekStart-${DateTime.sunday}')));
+    await settle(tester);
+
+    expect(
+      find.descendant(of: row, matching: find.text('Sunday')),
+      findsOneWidget,
+    );
+    final saved = await tester.runAsync(
+      () => SettingsService(db).watchWeekStart().first,
+    );
+    expect(saved, DateTime.sunday);
     await tester.pumpWidget(const SizedBox());
   });
 }

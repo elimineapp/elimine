@@ -28,7 +28,8 @@ void main() {
   tearDown(() => db.close());
 
   /// Creates a substance with one intake per `(day of September, amount)`
-  /// entry and shows its two-week chart.
+  /// entry and shows its chart for the current week (Monday 28 September to
+  /// Sunday 4 October).
   Future<BarChartData> pumpChart(
     WidgetTester tester,
     List<(int day, double? amount)> intakes,
@@ -78,12 +79,15 @@ void main() {
     final data = await pumpChart(tester, [(28, 250), (28, null), (29, null)]);
     expect(find.text('Per day, mg'), findsOneWidget);
 
-    final [..., yesterday, today] = data.barGroups;
+    expect(data.barGroups, hasLength(7));
+    final [yesterday, today, ...] = data.barGroups;
     expect(yesterday.barRods.first.toY, 250);
     expect(yesterday.barRods, hasLength(2));
     expect(today.barRods.first.toY, 0);
     expect(today.barRods, hasLength(2));
-    expect(data.barGroups.first.barRods, hasLength(1));
+    // Sunday has not come yet.
+    expect(data.barGroups.last.barRods, hasLength(1));
+    expect(data.barGroups.last.barRods.single.toY, 0);
     await finish(tester);
   });
 
@@ -91,9 +95,61 @@ void main() {
     final data = await pumpChart(tester, [(26, null), (28, null), (28, null)]);
     expect(find.text('Intakes'), findsOneWidget);
 
-    final [..., yesterday, _] = data.barGroups;
+    // Saturday the 26th belongs to the week before.
+    final [yesterday, ...] = data.barGroups;
     expect(yesterday.barRods.single.toY, 2);
     expect(data.barGroups.every((g) => g.barRods.length == 1), isTrue);
+    await finish(tester);
+  });
+
+  testWidgets('the year shows daily averages, this month over elapsed days', (
+    tester,
+  ) async {
+    await pumpChart(tester, [(1, 290), (29, 0.5)]);
+    await tester.tap(find.text('Year'));
+    await tester.pumpAndSettle();
+    final data = tester.widget<BarChart>(find.byType(BarChart)).data;
+    expect(find.text('Daily average, mg'), findsOneWidget);
+    expect(data.barGroups, hasLength(12));
+    // September: 290.5 mg over 29 days so far.
+    expect(data.barGroups[8].barRods.first.toY, closeTo(290.5 / 29, 1e-9));
+    expect(data.barGroups[11].barRods.first.toY, 0);
+    await finish(tester);
+  });
+
+  testWidgets('previous stops at the first intake of this substance', (
+    tester,
+  ) async {
+    // Another substance with an older intake does not move the limit.
+    await tester.runAsync(() async {
+      final other = await SubstanceService(db).create((
+        name: 'Tea',
+        unit: '',
+        color: 'aqua',
+        icon: 'leaf',
+        doses: const [],
+      ));
+      await IntakeService(
+        db,
+        clock: () => now,
+      ).log(substanceId: other, amount: null, takenAt: DateTime(2025, 1, 1, 9));
+    });
+    await pumpChart(tester, [(20, 100), (28, 100)]);
+    bool enabled(String key) =>
+        tester.widget<IconButton>(find.byKey(Key(key))).onPressed != null;
+
+    expect(enabled('previousPeriod'), isTrue);
+    expect(enabled('nextPeriod'), isFalse);
+    await tester.tap(find.byKey(const Key('previousPeriod')));
+    await tester.pumpAndSettle();
+    expect(find.text('Sep 21 – Sep 27'), findsOneWidget);
+    expect(enabled('previousPeriod'), isTrue);
+    // Sunday the 20th, the first intake, ends the week before.
+    await tester.tap(find.byKey(const Key('previousPeriod')));
+    await tester.pumpAndSettle();
+    expect(find.text('Sep 14 – Sep 20'), findsOneWidget);
+    expect(enabled('previousPeriod'), isFalse);
+    expect(enabled('nextPeriod'), isTrue);
     await finish(tester);
   });
 }

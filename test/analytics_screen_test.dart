@@ -3,8 +3,11 @@ import 'package:drift/native.dart';
 import 'package:elimine/app/providers.dart';
 import 'package:elimine/core/db/database.dart';
 import 'package:elimine/features/analytics/analytics_screen.dart';
+import 'package:elimine/features/analytics/bar_chart.dart';
+import 'package:elimine/features/analytics/period_bar.dart';
 import 'package:elimine/l10n/app_localizations.dart';
 import 'package:elimine/services/intake_service.dart';
+import 'package:elimine/services/settings_service.dart';
 import 'package:elimine/services/substance_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,7 +75,7 @@ void main() {
   ) async {
     await pumpScreen(tester);
     expect(metric('Total intakes', '3'), findsOneWidget);
-    expect(metric('Days with intakes', '2 of 30'), findsOneWidget);
+    expect(metric('Days with intakes', '2 of 29'), findsOneWidget);
     expect(metric('Most in a day', '2 (Sep 28)'), findsOneWidget);
     expect(metric('Busiest weekday', 'Monday'), findsOneWidget);
     expect(metric('Coffee', '67%'), findsOneWidget);
@@ -117,6 +120,149 @@ void main() {
     expect(label.height, lessThan(3 * 24));
     expect(tester.getSize(value).width, lessThanOrEqualTo(360 * 0.6));
     await tester.pumpWidget(const SizedBox());
+  });
+
+  Finder label(String text) => find.descendant(
+    of: find.byKey(const Key('periodLabel')),
+    matching: find.text(text),
+  );
+  int barCount(WidgetTester tester) =>
+      tester.widget<ElimineBarChart>(find.byType(ElimineBarChart)).bars.length;
+  bool enabled(WidgetTester tester, String key) =>
+      tester.widget<IconButton>(find.byKey(Key(key))).onPressed != null;
+
+  testWidgets('the current month has a slot per day and cannot go forward', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    expect(label('September 2026'), findsOneWidget);
+    expect(barCount(tester), 30);
+    expect(enabled(tester, 'nextPeriod'), isFalse);
+    expect(enabled(tester, 'previousPeriod'), isTrue);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('previous shows the month before; the label returns to now', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    await tester.tap(find.byKey(const Key('previousPeriod')));
+    await tester.pumpAndSettle();
+    expect(label('August 2026'), findsOneWidget);
+    expect(barCount(tester), 31);
+    expect(find.text('Nothing logged in this period'), findsOneWidget);
+    expect(enabled(tester, 'nextPeriod'), isTrue);
+
+    await tester.tap(find.byKey(const Key('periodLabel')));
+    await tester.pumpAndSettle();
+    expect(label('September 2026'), findsOneWidget);
+    expect(metric('Total intakes', '3'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('previous stops at the period of the first intake', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    await tester.tap(find.text('Year'));
+    await tester.pumpAndSettle();
+    expect(label('2026'), findsOneWidget);
+    expect(barCount(tester), 12);
+    await tester.tap(find.byKey(const Key('previousPeriod')));
+    await tester.pumpAndSettle();
+    expect(label('2025'), findsOneWidget);
+    expect(metric('Total intakes', '1'), findsOneWidget);
+    expect(metric('Days with intakes', '1 of 365'), findsOneWidget);
+    expect(enabled(tester, 'previousPeriod'), isFalse);
+
+    // Switching the range shows its current period.
+    await tester.tap(find.text('Month'));
+    await tester.pumpAndSettle();
+    expect(label('September 2026'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('months step with a Sunday-first week too', (tester) async {
+    await tester.runAsync(
+      () => SettingsService(db).setWeekStart(DateTime.sunday),
+    );
+    await pumpScreen(tester);
+    await tester.tap(find.byKey(const Key('previousPeriod')));
+    await tester.pumpAndSettle();
+    expect(label('August 2026'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a fling on the chart steps through periods', (tester) async {
+    await pumpScreen(tester);
+    final chart = find.byType(ElimineBarChart);
+    await tester.fling(chart, const Offset(300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(label('August 2026'), findsOneWidget);
+    await tester.fling(chart, const Offset(-300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(label('September 2026'), findsOneWidget);
+    // Nothing after the current month.
+    await tester.fling(chart, const Offset(-300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(label('September 2026'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('weeks start on Monday, or on Sunday when chosen', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    await tester.tap(find.text('Week'));
+    await tester.pumpAndSettle();
+    expect(label('Sep 28 – Oct 4'), findsOneWidget);
+    expect(barCount(tester), 7);
+    expect(find.text('Busiest weekday'), findsNothing);
+    expect(metric('Days with intakes', '2 of 2'), findsOneWidget);
+
+    await tester.runAsync(
+      () => SettingsService(db).setWeekStart(DateTime.sunday),
+    );
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(label('Sep 27 – Oct 3'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('taps still reach a page; a fling turns it', (tester) async {
+    var taps = 0;
+    var back = 0;
+    final controller = PageController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PeriodPages(
+            controller: controller,
+            count: 3,
+            height: 200,
+            onPageChanged: (b) => back = b,
+            itemBuilder: (context, b) => GestureDetector(
+              key: Key('page$b'),
+              onTap: () => taps++,
+              child: const ColoredBox(color: Color(0xFF000000)),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('page0')));
+    // Older periods are to the left: dragging right shows them.
+    await tester.fling(
+      find.byKey(const Key('page0')),
+      const Offset(300, 0),
+      1000,
+    );
+    await tester.pumpAndSettle();
+    expect((taps, back), (1, 1));
   });
 
   testWidgets('all years includes old intakes', (tester) async {

@@ -1,9 +1,4 @@
-# substance-chart Specification
-
-## Purpose
-A dose chart on the substance screen showing how much of one substance was taken over time.
-
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Dose chart periods
 The substance screen SHALL show a bar chart of doses in the substance's unit with the calendar ranges "Week" and "Month" (one bar per day, the sum of doses that day) and "Year" (one bar per month from January to December, the daily average), opening on the current period. The daily average SHALL divide the month's sum by the days in the month, or by the days elapsed so far for the current month. Days or months that have not come yet SHALL stay empty. Intakes without a dose SHALL NOT add to the sums. The title SHALL name the measure and the unit, e.g. "Per day, mg" or "Daily average, mg", and only the measure when the substance has no unit.
@@ -31,34 +26,7 @@ The dose chart SHALL have the same period bar as Analytics: the displayed period
 - **WHEN** the substance's first intake was in June 2026 and "Month" shows June 2026
 - **THEN** "Previous" is disabled
 
-### Requirement: Empty periods stay visible
-Bars SHALL start at a zero baseline, and periods without intakes SHALL remain as empty slots instead of being skipped or interpolated.
-
-#### Scenario: Gap
-- **WHEN** nothing was logged on some days of the range
-- **THEN** those days appear as empty slots
-
-### Requirement: Tooltip on tap
-Tapping a bar SHALL pin a tooltip with its date or month, its value with the unit and, when the period had intakes without a dose, their number; tapping it again or elsewhere SHALL clear it.
-
-#### Scenario: Tapping a bar
-- **WHEN** the user taps a day bar with 250 mg
-- **THEN** a tooltip shows that date and "250 mg"
-
-#### Scenario: Tapping a bar with intakes without a dose
-- **WHEN** the user taps a day with a 250 mg intake and one intake without a dose
-- **THEN** the tooltip shows that date, "250 mg" and "1 without dose"
-
-### Requirement: Intakes without a dose on the dose chart
-On the dose chart, every day (or month, for "Year") that had at least one intake without a dose SHALL show a dot just above its bar, or just above the baseline when it has no dose. Tapping that day SHALL show its tooltip like any bar.
-
-#### Scenario: Mixed day
-- **WHEN** a day had a 250 mg intake and an intake without a dose
-- **THEN** its bar is 250 with a dot above it
-
-#### Scenario: Day with only intakes without a dose
-- **WHEN** a day had only intakes without a dose
-- **THEN** it has no bar and a dot just above the baseline
+## MODIFIED Requirements
 
 ### Requirement: Intake count when no dose is known
 When the displayed period has intakes of the substance but none of them has a dose, the chart SHALL count intakes per day (or per month for "Year") instead of summing doses, titled "Intakes", with whole-number axis steps.
@@ -70,3 +38,9 @@ When the displayed period has intakes of the substance but none of them has a do
 #### Scenario: A dose appears
 - **WHEN** one intake in the period has a dose
 - **THEN** the chart sums doses and marks the other days with dots
+
+## REMOVED Requirements
+
+### Requirement: Dose chart ranges
+**Reason**: The rolling ranges "2 wk", "Month" (last 30 days) and "Year" (last 12 months) are replaced by calendar periods.
+**Migration**: See "Dose chart periods" and "Dose chart navigation".

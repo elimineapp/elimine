@@ -209,6 +209,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTitle => 'Settings';
 
   @override
+  String get generalSection => 'General';
+
+  @override
+  String get weekStart => 'Week starts on';
+
+  @override
   String get backupSection => 'Backup';
 
   @override
@@ -304,7 +310,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get analyticsTitle => 'Analytics';
 
   @override
-  String get rangeTwoWeeks => '2 wk';
+  String get rangeWeek => 'Week';
 
   @override
   String get rangeMonth => 'Month';
@@ -314,6 +320,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rangeAllYears => 'All years';
+
+  @override
+  String get previousPeriod => 'Previous';
+
+  @override
+  String get nextPeriod => 'Next';
 
   @override
   String get intakesChartTitle => 'Intakes';

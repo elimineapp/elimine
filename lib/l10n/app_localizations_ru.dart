@@ -214,6 +214,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsTitle => 'Настройки';
 
   @override
+  String get generalSection => 'Общие';
+
+  @override
+  String get weekStart => 'Начало недели';
+
+  @override
   String get backupSection => 'Резервная копия';
 
   @override
@@ -315,7 +321,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get analyticsTitle => 'Аналитика';
 
   @override
-  String get rangeTwoWeeks => '2 нед';
+  String get rangeWeek => 'Неделя';
 
   @override
   String get rangeMonth => 'Месяц';
@@ -325,6 +331,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get rangeAllYears => 'Все годы';
+
+  @override
+  String get previousPeriod => 'Назад';
+
+  @override
+  String get nextPeriod => 'Вперёд';
 
   @override
   String get intakesChartTitle => 'Приёмов';

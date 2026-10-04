@@ -4,6 +4,7 @@ import 'package:elimine/core/db/database.dart';
 import 'package:elimine/core/db/queries.dart';
 import 'package:elimine/features/analytics/analytics_queries.dart';
 import 'package:elimine/services/intake_service.dart';
+import 'package:elimine/services/settings_service.dart';
 import 'package:elimine/services/substance_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -216,5 +217,66 @@ void main() {
       {for (final t in totals) t.day: (t.total, t.count, t.dosed)},
       {'2026-09-01': (10.0, 1, 1), '2026-09-02': (20.0, 2, 2)},
     );
+  });
+
+  test(
+    'daily totals stop before until; first intake day per substance',
+    () async {
+      final a = await create('A');
+      final b = await create('B');
+      expect(await db.watchFirstIntakeDay().first, isNull);
+
+      await intakes.log(
+        substanceId: a,
+        amount: 1,
+        takenAt: DateTime(2026, 9, 10, 12),
+      );
+      await intakes.log(
+        substanceId: a,
+        amount: 1,
+        takenAt: DateTime(2026, 9, 20, 12),
+      );
+      final early = await intakes.log(
+        substanceId: b,
+        amount: 1,
+        takenAt: DateTime(2026, 8, 1, 12),
+      );
+      await intakes.log(
+        substanceId: b,
+        amount: 1,
+        takenAt: DateTime(2026, 9, 15, 12),
+      );
+
+      final bounded = await db
+          .watchDailyTotals(
+            since: DateTime(2026, 9, 1),
+            until: DateTime(2026, 9, 16),
+          )
+          .first;
+      expect(bounded.map((t) => t.day), ['2026-09-10', '2026-09-15']);
+
+      expect(await db.watchFirstIntakeDay().first, DateTime.utc(2026, 8, 1));
+      expect(
+        await db.watchFirstIntakeDay(substanceId: a).first,
+        DateTime.utc(2026, 9, 10),
+      );
+      // A deleted intake is not the first one any more.
+      await intakes.delete(early);
+      expect(await db.watchFirstIntakeDay().first, DateTime.utc(2026, 9, 10));
+      expect(
+        await db.watchFirstIntakeDay(substanceId: b).first,
+        DateTime.utc(2026, 9, 15),
+      );
+    },
+  );
+
+  test('the week starts on Monday until Sunday is chosen', () async {
+    final settings = SettingsService(db);
+    expect(await settings.watchWeekStart().first, DateTime.monday);
+    await settings.setWeekStart(DateTime.sunday);
+    expect(await settings.watchWeekStart().first, DateTime.sunday);
+    await settings.setWeekStart(DateTime.monday);
+    expect(await settings.watchWeekStart().first, DateTime.monday);
+    expect(await db.select(db.settings).get(), hasLength(1));
   });
 }

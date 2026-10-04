@@ -63,3 +63,13 @@ class Intakes extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Device preferences as key-value pairs; a missing key means the default.
+/// Not part of backups.
+class Settings extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column> get primaryKey => {key};
+}

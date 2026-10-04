@@ -8,14 +8,14 @@ export 'tables.dart' show newId;
 
 part 'database.g.dart';
 
-@DriftDatabase(tables: [Substances, Doses, Intakes])
+@DriftDatabase(tables: [Substances, Doses, Intakes, Settings])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _open());
 
   static QueryExecutor _open() => driftDatabase(name: 'elimine');
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -24,6 +24,7 @@ class AppDatabase extends _$AppDatabase {
       // SQLite cannot drop NOT NULL in place; alterTable rebuilds the table
       // and copies every row.
       from1To2: (m, schema) => m.alterTable(TableMigration(schema.intakes)),
+      from2To3: (m, schema) => m.createTable(schema.settings),
     ),
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
