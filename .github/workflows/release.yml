@@ -122,9 +122,9 @@ jobs:
           echo "Using $apksigner"
           "$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk \
             | tee "$RUNNER_TEMP/certs.txt"
-          # "Signer #1 ..." or "Signer (minSdkVersion=...) ...", depending on the
-          # build tools; every signer must carry the release certificate.
-          actual=$(sed -n 's/^Signer.* certificate SHA-256 digest: //p' "$RUNNER_TEMP/certs.txt" | sort -u)
+          # The prefix depends on the build tools ("Signer #1", "V2 Signer", ...);
+          # every signer must carry the release certificate.
+          actual=$(sed -n 's/^.*Signer.*certificate SHA-256 digest: //p' "$RUNNER_TEMP/certs.txt" | sort -u)
           expected=$(tr -d ' :\n' < .github/release-cert.sha256 | tr 'A-F' 'a-f')
           if [ "$actual" != "$expected" ]; then
             echo "::error::APK certificate '$actual' does not match .github/release-cert.sha256"
