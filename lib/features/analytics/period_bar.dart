@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/motion/motion.dart';
 import '../../l10n/app_localizations.dart';
 
 /// "‹ October 2026 ›": the displayed period with arrows to step through
@@ -98,5 +99,5 @@ class PeriodPages extends StatelessWidget {
 }
 
 /// Duration and curve for stepping by the arrows.
-const periodPageDuration = Duration(milliseconds: 280);
-const periodPageCurve = Curves.easeOutCubic;
+const periodPageDuration = Motion.medium;
+const periodPageCurve = Motion.standard;

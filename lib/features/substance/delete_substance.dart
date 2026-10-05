@@ -6,7 +6,8 @@ import '../../core/db/queries.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Asks to confirm, then deletes the substance with its doses and every
-/// intake, and reports it in a snackbar. There is no undo, so the dialog
+/// intake, and reports it in a snackbar unless [report] is off, for callers
+/// that report it once they have moved away. There is no undo, so the dialog
 /// names the substance and how many entries go with it. Returns whether the
 /// substance was deleted.
 Future<bool> confirmAndDeleteSubstance(
@@ -14,6 +15,7 @@ Future<bool> confirmAndDeleteSubstance(
   WidgetRef ref, {
   required String id,
   required String name,
+  bool report = true,
 }) async {
   final l = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.of(context);
@@ -44,8 +46,10 @@ Future<bool> confirmAndDeleteSubstance(
   if (confirmed != true) return false;
 
   await ref.read(substanceServiceProvider).delete(id);
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(l.substanceDeleted(name))));
+  if (report) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(l.substanceDeleted(name))));
+  }
   return true;
 }

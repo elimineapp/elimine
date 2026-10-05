@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/motion/container_transform.dart';
 import '../../app/providers.dart';
+import '../../app/sheet_page.dart';
 import '../../core/db/database.dart';
 import '../../core/l10n/format.dart';
 import '../../l10n/app_localizations.dart';
@@ -42,6 +44,9 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
   /// hinting that there is more above.
   static const _chartPeek = 56.0;
 
+  /// The collapsed sheet's top corners.
+  static const _cornerRadius = 28.0;
+
   /// How far the expand hint lifts the collapsed sheet.
   static const _hintLift = 28.0;
 
@@ -55,6 +60,11 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
   final _sheet = DraggableScrollableController();
   final _messenger = GlobalKey<ScaffoldMessengerState>();
   final _logBlock = GlobalKey();
+
+  Substance? _substance;
+
+  /// The sheet's surface, which the edit screen grows out of.
+  final _surface = GlobalKey();
   ScrollController? _scroll;
 
   /// Height of the collapsed sheet in pixels, measured from the logging
@@ -98,6 +108,7 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
       setState(() => _collapsedHeight = height);
       return;
     }
+    SheetRoute.revealOf(context);
     _maybeHint();
   }
 
@@ -156,6 +167,15 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
     );
   }
 
+  void _edit(Substance substance) => context.push(
+    '/substance/${substance.id}/edit',
+    extra: TransitionOrigin(
+      key: _surface,
+      radius: _expanded ? 0 : _cornerRadius,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+    ),
+  );
+
   /// Collapsed, logging closes the sheet and reports on Home; expanded, the
   /// user stays and sees the new entry on top of History.
   Future<void> _log(Substance substance, double? amount) async {
@@ -201,17 +221,32 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final substance = ref.watch(substanceProvider(widget.substanceId)).value;
-    final doses =
-        ref.watch(dosesProvider(widget.substanceId)).value ?? const [];
-    final intakes =
-        ref.watch(substanceIntakesProvider(widget.substanceId)).value ??
-        const [];
+    // Home's list already has the substance, so the header, and the icon
+    // flying into it, are there from the first frame.
+    // The last one seen stays while the sheet closes after a deletion.
+    final substance = _substance =
+        ref.watch(substanceProvider(widget.substanceId)).value ??
+        ref
+            .read(substancesProvider)
+            .value
+            ?.map((s) => s.substance)
+            .where((s) => s.id == widget.substanceId)
+            .firstOrNull ??
+        _substance;
+    final dosesAsync = ref.watch(dosesProvider(widget.substanceId));
+    final intakesAsync = ref.watch(
+      substanceIntakesProvider(widget.substanceId),
+    );
+    final doses = dosesAsync.value ?? const [];
+    final intakes = intakesAsync.value ?? const [];
+    // The collapsed size depends on the dose chips, so it is measured once
+    // everything has loaded.
+    final loaded = dosesAsync.hasValue && intakesAsync.hasValue;
     // Watched so the hint can decide as soon as the flag is known.
     ref.watch(sheetExpandedProvider);
     final theme = Theme.of(context);
 
-    if (substance != null && !_expanded) {
+    if (substance != null && loaded && !_expanded) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
     }
 
@@ -242,10 +277,11 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
           builder: (context, scroll) {
             _scroll = scroll;
             return Material(
+              key: _surface,
               color: theme.colorScheme.surfaceContainerLow,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(_expanded ? 0 : 28),
+                  top: Radius.circular(_expanded ? 0 : _cornerRadius),
                 ),
               ),
               clipBehavior: Clip.antiAlias,
@@ -292,6 +328,7 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
               lastLabel: l.lastIntake(last, substance.unit, widget.clock()),
               expanded: _expanded,
               onCollapse: _collapse,
+              onEdit: () => _edit(substance),
             ),
           ),
         ),
@@ -389,12 +426,14 @@ class _Header extends StatelessWidget {
     required this.lastLabel,
     required this.expanded,
     required this.onCollapse,
+    required this.onEdit,
   });
 
   final Substance substance;
   final String lastLabel;
   final bool expanded;
   final VoidCallback onCollapse;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -439,10 +478,13 @@ class _Header extends StatelessWidget {
                   )
                 else
                   const SizedBox(width: 16),
-                SubstanceBadge(
-                  color: substance.color,
-                  icon: substance.icon,
-                  filled: true,
+                SubstanceIconHero(
+                  tag: substanceIconTag(substance.id),
+                  child: SubstanceBadge(
+                    color: substance.color,
+                    icon: substance.icon,
+                    filled: true,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -470,8 +512,7 @@ class _Header extends StatelessWidget {
                 IconButton(
                   key: const Key('editSubstance'),
                   icon: const Icon(Icons.settings_outlined),
-                  onPressed: () =>
-                      context.push('/substance/${substance.id}/edit'),
+                  onPressed: onEdit,
                 ),
                 const SizedBox(width: 8),
               ],

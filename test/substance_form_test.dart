@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:drift/native.dart';
 import 'package:elimine/app/providers.dart';
 import 'package:elimine/app/router.dart';
+import 'package:elimine/core/appearance.dart';
 import 'package:elimine/core/db/database.dart';
 import 'package:elimine/core/db/queries.dart';
 import 'package:elimine/features/home/home_screen.dart';
@@ -11,6 +12,7 @@ import 'package:elimine/l10n/app_localizations.dart';
 import 'package:elimine/services/intake_service.dart';
 import 'package:elimine/services/settings_service.dart';
 import 'package:elimine/services/substance_service.dart';
+import 'package:elimine/widgets/substance_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +84,83 @@ void main() {
     expect(find.text('opened ${saved.id}'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
+  });
+
+  group('header badge', () {
+    Future<void> pumpForm(WidgetTester tester, String location) async {
+      final router = GoRouter(
+        initialLocation: location,
+        routes: [
+          GoRoute(
+            path: '/substance/new',
+            builder: (_, _) => const SubstanceFormScreen(),
+          ),
+          GoRoute(
+            path: '/substance/:id/edit',
+            builder: (_, state) =>
+                SubstanceFormScreen(substanceId: state.pathParameters['id']),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(db)],
+          child: MaterialApp.router(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    SubstanceBadge badge(WidgetTester tester) =>
+        tester.widget<SubstanceBadge>(find.byKey(const Key('formBadge')));
+
+    testWidgets('editing shows the saved color and icon; picking a color '
+        'changes it before saving', (tester) async {
+      final id = (await tester.runAsync(
+        () => SubstanceService(db).create((
+          name: 'Coffee',
+          unit: 'mg',
+          color: 'green',
+          icon: 'coffee',
+          doses: const [],
+        )),
+      ))!;
+      await pumpForm(tester, '/substance/$id/edit');
+
+      expect(find.text('Edit substance'), findsOneWidget);
+      expect((badge(tester).color, badge(tester).icon), ('green', 'coffee'));
+      expect(badge(tester).filled, isTrue);
+
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('color_red')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(const Key('color_red')));
+      await tester.pump();
+
+      expect(badge(tester).color, 'red');
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a new substance shows the default color', (tester) async {
+      await pumpForm(tester, '/substance/new');
+
+      expect(find.text('New substance'), findsOneWidget);
+      expect(badge(tester).color, substanceColors.keys.first);
+
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   group('deleting from the edit screen', () {
@@ -236,6 +315,44 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('after saving, the form shrinks into the new sheet', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      await tester.tap(find.text('New substance'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('nameField')), 'Tea');
+      await tester.tap(find.byKey(const Key('saveButton')));
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+
+      final surface = find.byKey(const Key('sheetEntranceSurface'));
+      final tops = <double>[];
+      for (var i = 0; i < 60; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        if (surface.evaluate().isNotEmpty) {
+          tops.add(tester.getTopLeft(surface).dy);
+        }
+      }
+      await settle(tester);
+
+      final sheet = tester.getTopLeft(
+        find
+            .descendant(
+              of: find.byType(SubstanceScreen),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(tops.where((top) => top > 0 && top < sheet.dy), isNotEmpty);
+      expect(find.byType(SubstanceFormScreen), findsNothing);
+      expect(find.byKey(const Key('chartAndHistory')).hitTestable(), findsOne);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
     Future<void> openEditFromSheet(WidgetTester tester) async {
       await tester.runAsync(
         () => SubstanceService(db).create((
@@ -265,6 +382,21 @@ void main() {
       await tester.tap(find.widgetWithText(OutlinedButton, 'Archive'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(TextButton, 'Archive'));
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+
+      // First the edit screen shrinks back into the sheet, which is still
+      // there once the edit screen is gone.
+      bool? sheetAfterEdit;
+      for (var i = 0; i < 60 && sheetAfterEdit == null; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        if (find.byType(SubstanceFormScreen).evaluate().isEmpty) {
+          sheetAfterEdit = find.byType(SubstanceScreen).evaluate().isNotEmpty;
+        }
+      }
+      expect(sheetAfterEdit, isTrue);
       await settle(tester);
 
       expect(find.byType(SubstanceFormScreen), findsNothing);
@@ -287,12 +419,30 @@ void main() {
       await tester.tap(find.byKey(const Key('deleteButton')));
       await settle(tester);
       await tester.tap(find.byKey(const Key('confirmDelete')));
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+
+      // The snackbar waits until the sheet has closed.
+      bool? sheetWithSnackbar;
+      for (var i = 0; i < 80 && sheetWithSnackbar == null; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        if (find.text('Tea deleted').evaluate().isNotEmpty) {
+          sheetWithSnackbar = find
+              .byType(SubstanceScreen)
+              .evaluate()
+              .isNotEmpty;
+        }
+      }
+      expect(sheetWithSnackbar, isFalse);
       await settle(tester);
 
       expect(find.byType(SubstanceFormScreen), findsNothing);
       expect(find.byType(SubstanceScreen), findsNothing);
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(find.text('Tea'), findsNothing);
+      expect(find.text('Tea deleted'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });

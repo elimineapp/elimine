@@ -1,6 +1,30 @@
 import 'package:flutter/material.dart';
 
+import '../app/motion/motion.dart';
 import '../core/appearance.dart';
+
+/// The [Hero] tag of a substance's filled badge, shared by its Home tile,
+/// its substance screen and its edit screen, so the icon travels between
+/// them.
+Object substanceIconTag(String id) => (SubstanceBadge, id);
+
+/// The tag of the new substance screen's badge until it is saved.
+const Object newSubstanceIconTag = (SubstanceBadge, null);
+
+/// A filled badge that travels between a substance's screens as a [Hero],
+/// except when the system removes animations.
+class SubstanceIconHero extends StatelessWidget {
+  const SubstanceIconHero({super.key, required this.tag, required this.child});
+
+  final Object tag;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => HeroMode(
+    enabled: !Motion.reducedOf(context),
+    child: Hero(tag: tag, child: child),
+  );
+}
 
 /// The substance icon on a circle in the substance color: tinted, with the
 /// icon in that color, or [filled], with the icon in a contrasting color.

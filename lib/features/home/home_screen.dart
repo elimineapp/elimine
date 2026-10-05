@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../app/motion/container_transform.dart';
 import '../../app/providers.dart';
 import '../../core/appearance.dart';
 import '../../core/db/queries.dart';
@@ -142,10 +143,13 @@ class _SubstanceTile extends StatelessWidget {
           child: Row(
             spacing: 14,
             children: [
-              SubstanceBadge(
-                color: substance.color,
-                icon: substance.icon,
-                filled: true,
+              SubstanceIconHero(
+                tag: substanceIconTag(substance.id),
+                child: SubstanceBadge(
+                  color: substance.color,
+                  icon: substance.icon,
+                  filled: true,
+                ),
               ),
               Expanded(
                 child: Column(
@@ -224,18 +228,34 @@ class _WeekStrip extends StatelessWidget {
   );
 }
 
-class _NewSubstanceTile extends StatelessWidget {
+class _NewSubstanceTile extends StatefulWidget {
   const _NewSubstanceTile();
+
+  @override
+  State<_NewSubstanceTile> createState() => _NewSubstanceTileState();
+}
+
+class _NewSubstanceTileState extends State<_NewSubstanceTile> {
+  /// The row the new substance screen grows out of.
+  final _row = GlobalKey();
+
+  static const _radius = 20.0;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return OutlinedButton.icon(
+      key: _row,
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_radius),
+        ),
       ),
-      onPressed: () => context.push('/substance/new'),
+      onPressed: () => context.push(
+        '/substance/new',
+        extra: TransitionOrigin(key: _row, radius: _radius),
+      ),
       icon: const Icon(Icons.add),
       label: Text(l.newSubstanceTile),
     );
