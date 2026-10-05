@@ -67,6 +67,33 @@ class SubstanceService {
         const SubstancesCompanion(archivedAt: Value(null)),
       );
 
+  /// Moves an active substance in front of the active substance [beforeId],
+  /// or behind the last active one when it is null. Every substance is
+  /// renumbered, archived ones included, so they keep their neighbors and
+  /// [restore] still finds their place.
+  Future<void> move(String id, {String? beforeId}) => db.transaction(() async {
+    if (id == beforeId) return;
+    final all =
+        await (db.select(db.substances)..orderBy([
+              (s) => OrderingTerm.asc(s.sortOrder),
+              (s) => OrderingTerm.asc(s.id),
+            ]))
+            .get();
+    final moved = all.removeAt(all.indexWhere((s) => s.id == id));
+    all.insert(
+      beforeId == null
+          ? all.lastIndexWhere((s) => s.archivedAt == null) + 1
+          : all.indexWhere((s) => s.id == beforeId),
+      moved,
+    );
+    for (final (i, s) in all.indexed) {
+      if (s.sortOrder == i) continue;
+      await (db.update(db.substances)..where((t) => t.id.equals(s.id))).write(
+        SubstancesCompanion(sortOrder: Value(i)),
+      );
+    }
+  });
+
   /// Removes the substance with its doses and every intake, soft-deleted ones
   /// included. Permanent: with `secure_delete` on, SQLite zeroes the freed
   /// content, and the checkpoint drops WAL frames that still hold it.

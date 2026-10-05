@@ -2,12 +2,15 @@ import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:drift/native.dart';
 import 'package:elimine/app/providers.dart';
 import 'package:elimine/core/db/database.dart';
+import 'package:elimine/core/db/queries.dart';
 import 'package:elimine/features/home/home_screen.dart';
 import 'package:elimine/l10n/app_localizations.dart';
 import 'package:elimine/services/intake_service.dart';
 import 'package:elimine/services/substance_service.dart';
 import 'package:elimine/widgets/intake_tile.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -250,5 +253,150 @@ void main() {
     expect(find.byKey(const Key('weekStrip')), findsNothing);
 
     await tester.pumpWidget(const SizedBox());
+  });
+
+  group('reordering', () {
+    Future<Map<String, String>> fill(WidgetTester tester) async {
+      final ids = <String, String>{};
+      await tester.runAsync(() async {
+        for (final name in ['Coffee', 'Melatonin', 'Ibuprofen']) {
+          ids[name] = await SubstanceService(db).create((
+            name: name,
+            unit: '',
+            color: 'green',
+            icon: 'pill',
+            doses: const [],
+          ));
+        }
+      });
+      return ids;
+    }
+
+    /// Tile names (and "New substance") from top to bottom on screen.
+    List<String> onScreen(WidgetTester tester) {
+      final rows = ['Coffee', 'Melatonin', 'Ibuprofen', 'New substance']
+        ..sort(
+          (a, b) => tester
+              .getTopLeft(find.text(a))
+              .dy
+              .compareTo(tester.getTopLeft(find.text(b)).dy),
+        );
+      return rows;
+    }
+
+    Future<List<String>> stored(WidgetTester tester) async =>
+        (await tester.runAsync(() => db.watchSubstancesWithLast().first))!
+            .map((i) => i.substance.name)
+            .toList();
+
+    /// Long-presses [name] and drags it by [by] in small steps.
+    Future<void> drag(WidgetTester tester, String name, Offset by) async {
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text(name)),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      for (var i = 0; i < 20; i++) {
+        await gesture.moveBy(by / 20);
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await gesture.up();
+    }
+
+    testWidgets('dragging the third tile above the first moves it', (
+      tester,
+    ) async {
+      await fill(tester);
+      await pumpHome(tester);
+
+      final from = tester.getCenter(find.text('Ibuprofen')).dy;
+      final to = tester.getTopLeft(find.text('Coffee')).dy;
+      await drag(tester, 'Ibuprofen', Offset(0, to - from - 20));
+      // Through the drop animation, before the database is read again.
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(onScreen(tester), [
+        'Ibuprofen',
+        'Coffee',
+        'Melatonin',
+        'New substance',
+      ]);
+
+      await tester.pumpAndSettle();
+      expect(onScreen(tester), [
+        'Ibuprofen',
+        'Coffee',
+        'Melatonin',
+        'New substance',
+      ]);
+      expect(await stored(tester), ['Ibuprofen', 'Coffee', 'Melatonin']);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a tile dragged below "New substance" lands above it', (
+      tester,
+    ) async {
+      await fill(tester);
+      await pumpHome(tester);
+
+      await drag(tester, 'Coffee', const Offset(0, 500));
+      await tester.pumpAndSettle();
+
+      expect(onScreen(tester), [
+        'Melatonin',
+        'Ibuprofen',
+        'Coffee',
+        'New substance',
+      ]);
+      expect(await stored(tester), ['Melatonin', 'Ibuprofen', 'Coffee']);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a screen reader moves a tile with "Move up" and "Move down"', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await fill(tester);
+      await pumpHome(tester);
+
+      SemanticsNode tile(String name) => tester.getSemantics(
+        find
+            .ancestor(
+              of: find.text(name),
+              matching: find.byType(ReorderableDelayedDragStartListener),
+            )
+            .first,
+      );
+      Map<String, int> actions(String name) => {
+        for (final id in tile(
+          name,
+        ).getSemanticsData().customSemanticsActionIds!)
+          CustomSemanticsAction.getAction(id)!.label!: id,
+      };
+
+      expect(actions('Coffee'), isNot(contains('Move up')));
+      expect(actions('Coffee'), contains('Move down'));
+      expect(actions('Ibuprofen'), contains('Move up'));
+      expect(actions('Ibuprofen'), isNot(contains('Move down')));
+
+      final coffee = tile('Coffee');
+      coffee.owner!.performAction(
+        coffee.id,
+        SemanticsAction.customAction,
+        actions('Coffee')['Move down'],
+      );
+      await tester.pumpAndSettle();
+
+      expect(onScreen(tester), [
+        'Melatonin',
+        'Coffee',
+        'Ibuprofen',
+        'New substance',
+      ]);
+      expect(await stored(tester), ['Melatonin', 'Coffee', 'Ibuprofen']);
+
+      await tester.pumpWidget(const SizedBox());
+      handle.dispose();
+    });
   });
 }

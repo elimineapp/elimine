@@ -127,6 +127,67 @@ void main() {
     });
   });
 
+  group('moving', () {
+    Future<List<String>> names() async => [
+      for (final i in await db.watchSubstancesWithLast().first)
+        i.substance.name,
+    ];
+
+    test('moves a substance up, down and to the end', () async {
+      final coffee = await create('Coffee');
+      await create('Melatonin');
+      final ibuprofen = await create('Ibuprofen');
+
+      await substances.move(ibuprofen, beforeId: coffee);
+      expect(await names(), ['Ibuprofen', 'Coffee', 'Melatonin']);
+
+      await substances.move(ibuprofen);
+      expect(await names(), ['Coffee', 'Melatonin', 'Ibuprofen']);
+
+      await substances.move(coffee, beforeId: ibuprofen);
+      expect(await names(), ['Melatonin', 'Coffee', 'Ibuprofen']);
+    });
+
+    test('renumbers duplicate orders', () async {
+      final a = await create('A');
+      final b = await create('B');
+      final c = await create('C');
+      await db
+          .update(db.substances)
+          .write(const SubstancesCompanion(sortOrder: Value(0)));
+
+      // Ids from the same millisecond decide the tie in no particular order.
+      final [first, second] = ([b, c]..sort());
+      await substances.move(a);
+      final orders = {
+        for (final s in await db.select(db.substances).get()) s.id: s.sortOrder,
+      };
+      expect([orders[first], orders[second], orders[a]], [0, 1, 2]);
+    });
+
+    test('an archived substance keeps its neighbors', () async {
+      final coffee = await create('Coffee');
+      final melatonin = await create('Melatonin');
+      final ibuprofen = await create('Ibuprofen');
+
+      await substances.archive(melatonin);
+      await substances.move(ibuprofen, beforeId: coffee);
+      await substances.restore(melatonin);
+
+      expect(await names(), ['Ibuprofen', 'Coffee', 'Melatonin']);
+    });
+
+    test('a substance created after a move comes last', () async {
+      final coffee = await create('Coffee');
+      final melatonin = await create('Melatonin');
+
+      await substances.move(melatonin, beforeId: coffee);
+      await create('Vitamin D');
+
+      expect(await names(), ['Melatonin', 'Coffee', 'Vitamin D']);
+    });
+  });
+
   group('IntakeService', () {
     test('clamps a future time to now', () async {
       final now = DateTime(2026, 9, 29, 12);

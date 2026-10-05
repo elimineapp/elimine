@@ -76,6 +76,32 @@ void main() {
     expect(await target.select(target.intakes).get(), hasLength(3));
   });
 
+  test('a backup keeps the order set by moving', () async {
+    final substances = SubstanceService(source, clock: () => now);
+    Future<String> create(String name) => substances.create((
+      name: name,
+      unit: '',
+      color: 'green',
+      icon: 'pill',
+      doses: const [],
+    ));
+    final coffee = await create('Coffee');
+    await create('Melatonin');
+    final ibuprofen = await create('Ibuprofen');
+    await substances.move(ibuprofen, beforeId: coffee);
+
+    final json = await backup(source).export();
+    await backup(target).apply(await backup(target).plan(decode(json)));
+
+    expect(
+      [
+        for (final i in await target.watchSubstancesWithLast().first)
+          i.substance.name,
+      ],
+      ['Ibuprofen', 'Coffee', 'Melatonin'],
+    );
+  });
+
   test('device settings stay out of backups', () async {
     await fill(source);
     await SettingsService(source).setWeekStart(DateTime.sunday);

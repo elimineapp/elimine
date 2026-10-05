@@ -18,6 +18,7 @@ import 'package:elimine/services/substance_service.dart';
 import 'package:elimine/widgets/intake_tile.dart';
 import 'package:elimine/widgets/substance_badge.dart';
 import 'package:elimine/l10n/app_localizations.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -319,6 +320,57 @@ void main() {
               .first,
         )
         .dy;
+
+    testWidgets('a tap opens a tile that has just been dragged', (
+      tester,
+    ) async {
+      await tester.runAsync(
+        () => SubstanceService(db).create((
+          name: 'Tea',
+          unit: '',
+          color: 'green',
+          icon: 'leaf',
+          doses: const [],
+        )),
+      );
+      await tester.runAsync(() => SettingsService(db).setSheetExpanded());
+      await pumpApp(tester);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Tea')),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      final by =
+          tester.getTopLeft(find.text('Coffee')).dy -
+          tester.getCenter(find.text('Tea')).dy -
+          20;
+      for (var i = 0; i < 20; i++) {
+        await gesture.moveBy(Offset(0, by / 20));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(find.text('Tea')).dy,
+        lessThan(tester.getTopLeft(find.text('Coffee')).dy),
+      );
+
+      await tester.tap(find.text('Tea'));
+      await tester.pumpAndSettle();
+
+      // No clash with the lifted copy of the tile and its icon hero.
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SubstanceScreen), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(SubstanceScreen),
+          matching: find.text('Tea'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(const SizedBox());
+    });
 
     testWidgets('opens collapsed over Home and covers the bottom bar', (
       tester,

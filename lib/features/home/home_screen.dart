@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -47,15 +48,11 @@ class HomeScreen extends ConsumerWidget {
           switch (substances) {
             AsyncData(value: final items) => SliverPadding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              sliver: SliverList.separated(
-                itemCount: items.length + 1,
-                separatorBuilder: (context, i) => const SizedBox(height: 8),
-                itemBuilder: (context, i) => i < items.length
-                    ? _SubstanceTile(
-                        item: items[i],
-                        weeks: marks[items[i].substance.id] ?? noWeekMarks,
-                      )
-                    : const _NewSubstanceTile(),
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  _SubstanceList(items: items, marks: marks),
+                  const SliverToBoxAdapter(child: _NewSubstanceTile()),
+                ],
               ),
             ),
             AsyncError(:final error) => SliverToBoxAdapter(
@@ -111,6 +108,116 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Substance tiles in the user's order, moved by long-press and drag (or the
+/// screen reader's move actions).
+class _SubstanceList extends ConsumerStatefulWidget {
+  const _SubstanceList({required this.items, required this.marks});
+
+  final List<SubstanceWithLast> items;
+  final Map<String, List<int>> marks;
+
+  @override
+  ConsumerState<_SubstanceList> createState() => _SubstanceListState();
+}
+
+class _SubstanceListState extends ConsumerState<_SubstanceList> {
+  /// The order on screen. It changes as soon as a tile is dropped, so the tile
+  /// stays put until the database emits the saved order.
+  late List<SubstanceWithLast> _items = widget.items;
+
+  /// Index the dragged tile was picked up at; database updates wait until it
+  /// is dropped.
+  int? _dragFrom;
+
+  static const _gap = 8.0;
+  static const _radius = 20.0;
+
+  @override
+  void didUpdateWidget(_SubstanceList old) {
+    super.didUpdateWidget(old);
+    if (_dragFrom == null && !identical(widget.items, old.items)) {
+      _items = widget.items;
+    }
+  }
+
+  void _start(int index) {
+    HapticFeedback.mediumImpact();
+    _dragFrom = index;
+  }
+
+  /// Dropped where it was picked up: [_reorder] will not be called.
+  void _end(int insertIndex) {
+    final from = _dragFrom;
+    if (from == null || insertIndex == from || insertIndex == from + 1) {
+      setState(() {
+        _dragFrom = null;
+        _items = widget.items;
+      });
+    }
+  }
+
+  /// [to] is the index after removing the tile from [from].
+  void _reorder(int from, int to) {
+    final items = [..._items];
+    final moved = items.removeAt(from);
+    items.insert(to, moved);
+    setState(() {
+      _dragFrom = null;
+      _items = items;
+    });
+    ref
+        .read(substanceServiceProvider)
+        .move(
+          moved.substance.id,
+          beforeId: to + 1 < items.length ? items[to + 1].substance.id : null,
+        );
+  }
+
+  Widget _tile(int index) => _SubstanceTile(
+    item: _items[index],
+    weeks: widget.marks[_items[index].substance.id] ?? noWeekMarks,
+  );
+
+  /// The tile under the finger: lifted off the list on an opaque surface, so
+  /// its tint does not show the tiles beneath.
+  Widget _lifted(Widget child, int index, Animation<double> animation) =>
+      AnimatedBuilder(
+        animation: animation,
+        builder: (context, _) {
+          final t = Curves.easeOut.transform(animation.value);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: _gap),
+            child: Transform.scale(
+              scale: 1 + 0.03 * t,
+              child: Material(
+                color: Theme.of(context).colorScheme.surface,
+                elevation: 6 * t,
+                borderRadius: BorderRadius.circular(_radius),
+                child: _tile(index),
+              ),
+            ),
+          );
+        },
+      );
+
+  @override
+  Widget build(BuildContext context) => SliverReorderableList(
+    itemCount: _items.length,
+    onReorderStart: _start,
+    onReorderEnd: _end,
+    onReorderItem: _reorder,
+    proxyDecorator: _lifted,
+    itemBuilder: (context, i) => ReorderableDelayedDragStartListener(
+      key: ValueKey(_items[i].substance.id),
+      index: i,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: _gap),
+        child: _tile(i),
+      ),
+    ),
+  );
 }
 
 /// A substance in its color: icon, name, last intake and the weeks it was
