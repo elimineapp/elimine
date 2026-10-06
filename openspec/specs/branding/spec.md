@@ -14,15 +14,19 @@ The app SHALL appear in the launcher and system settings under the name "Elimine
 - **THEN** its launcher entry reads "Elimine"
 
 ### Requirement: Adaptive launcher icon
-On Android versions that support adaptive icons, the launcher icon SHALL be the Elimine icon built from a separate background (a green-to-blue gradient) and foreground (a light and a dark leaf), so the launcher can apply its own mask. Both leaves SHALL stay inside the area every mask keeps visible.
+On Android versions that support adaptive icons, the launcher icon SHALL be the Elimine icon built from a separate background (flat ink with a soft light highlight toward the top left) and foreground (a light leaf and a blue leaf), so the launcher can apply its own mask. Both leaves SHALL stay inside the area every mask keeps visible.
 
 #### Scenario: Circular mask
 - **WHEN** the launcher masks icons as circles
-- **THEN** the icon shows both leaves on the gradient with no part of them cut off
+- **THEN** the icon shows both leaves on the ink background with no part of them cut off
 
 #### Scenario: Rounded square mask
 - **WHEN** the launcher masks icons as rounded squares or squircles
-- **THEN** the icon shows both leaves on the gradient
+- **THEN** the icon shows both leaves on the ink background
+
+#### Scenario: Dark wallpaper
+- **WHEN** the launcher shows the icon on a dark wallpaper
+- **THEN** both leaves stay clearly visible against the ink background
 
 ### Requirement: Themed icon
 On Android versions with themed icons, the launcher icon SHALL provide a monochrome version of the leaves so that, when the user enables themed icons, the system tints it to match the wallpaper colors like other apps.

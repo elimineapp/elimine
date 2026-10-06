@@ -2,16 +2,15 @@ import cairosvg, os
 WHITE = "M303 773C240 650 215 500 300 400C390 295 540 250 685 242C655 330 590 430 490 500C400 565 330 650 303 773Z"
 DARK  = "M397 810C420 680 500 560 640 510C720 485 790 480 824 482C810 600 730 720 600 770C530 795 450 805 397 810Z"
 CX, CY = 515, 526  # glyph centre
-GRAD = '''<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0" stop-color="#86D98C"/><stop offset=".45" stop-color="#58A6B4"/><stop offset="1" stop-color="#3A5FBD"/></linearGradient>
-<radialGradient id="h" cx=".2" cy=".15" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>'''
-def glyph(size, scale, white="#F7F6F1", dark="#1B2638"):
+INK = "#1B2638"  # background, and the ink accent of the app's theme
+DEFS = '''<defs><radialGradient id="h" cx=".2" cy=".15" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>'''
+def glyph(size, scale, white="#F7F6F1", dark="#3A5FBD"):
     t = f'translate({size/2} {size/2}) scale({scale}) translate({-CX} {-CY})'
     return f'<g transform="{t}"><path d="{WHITE}" fill="{white}"/><path d="{DARK}" fill="{dark}"/></g>'
 def bg(size, rx=0):
-    return f'<rect width="{size}" height="{size}" rx="{rx}" fill="url(#g)"/><rect width="{size}" height="{size}" rx="{rx}" fill="url(#h)"/>'
+    return f'<rect width="{size}" height="{size}" rx="{rx}" fill="{INK}"/><rect width="{size}" height="{size}" rx="{rx}" fill="url(#h)"/>'
 def svg(size, body, defs=True):
-    return f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">{GRAD if defs else ""}{body}</svg>'
+    return f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">{DEFS if defs else ""}{body}</svg>'
 def png(s, path, px):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     cairosvg.svg2png(bytestring=s.encode(), write_to=path, output_width=px, output_height=px)
@@ -61,17 +60,17 @@ vfg = lambda w,dk: f'''<vector xmlns:android="http://schemas.android.com/apk/res
     <path android:fillColor="{dk}" android:pathData="{vpath(DARK, ascale)}"/>
 </vector>
 '''
-open(f"{O}/android/res/drawable/ic_launcher_foreground.xml","w").write(vfg("#F7F6F1","#1B2638"))
+open(f"{O}/android/res/drawable/ic_launcher_foreground.xml","w").write(vfg("#F7F6F1","#3A5FBD"))
 open(f"{O}/android/res/drawable/ic_launcher_monochrome.xml","w").write(vfg("#000000","#000000"))
 open(f"{O}/android/res/drawable/ic_launcher_background.xml","w").write('''<vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M0,0h108v108h-108z" android:fillColor="#FF1B2638"/>
     <path android:pathData="M0,0h108v108h-108z">
         <aapt:attr name="android:fillColor">
-            <gradient android:type="linear" android:startX="0" android:startY="0" android:endX="108" android:endY="108">
-                <item android:offset="0" android:color="#FF86D98C"/>
-                <item android:offset="0.45" android:color="#FF58A6B4"/>
-                <item android:offset="1" android:color="#FF3A5FBD"/>
+            <gradient android:type="radial" android:centerX="21.6" android:centerY="16.2" android:gradientRadius="86.4">
+                <item android:offset="0" android:color="#2EFFFFFF"/>
+                <item android:offset="1" android:color="#00FFFFFF"/>
             </gradient>
         </aapt:attr>
     </path>

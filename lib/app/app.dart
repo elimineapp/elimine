@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import 'providers.dart';
 import 'router.dart';
+import 'theme.dart';
 
 class ElimineApp extends ConsumerStatefulWidget {
   const ElimineApp({super.key});
@@ -36,7 +37,6 @@ class _ElimineAppState extends ConsumerState<ElimineApp> {
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFF3F6E5A);
     final initial = ref.watch(initialPreferencesProvider);
     final locale = ref.watch(localeProvider);
     final themeMode = ref.watch(themeModeProvider);
@@ -47,8 +47,8 @@ class _ElimineAppState extends ConsumerState<ElimineApp> {
       // Until the streams emit, what main read before the first frame.
       locale: locale.hasValue ? locale.value : initial.locale,
       themeMode: themeMode.value ?? initial.themeMode,
-      theme: ThemeData(colorSchemeSeed: seed),
-      darkTheme: ThemeData(colorSchemeSeed: seed, brightness: Brightness.dark),
+      theme: ThemeData(colorScheme: inkLight),
+      darkTheme: ThemeData(colorScheme: inkDark),
       routerConfig: router,
     );
   }

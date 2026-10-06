@@ -1,6 +1,6 @@
 # App icon
 
-Two leaves, light and dark, on a green-to-blue gradient.
+Two leaves, light and blue, on ink. The ink is also the accent of the app's color theme (see `design/theme/`).
 
 | File | Used for |
 | --- | --- |
@@ -18,7 +18,7 @@ The Android launcher resources live in `android/app/src/main/res/`:
 
 ## Regenerating
 
-`gen.py` needs Python with [CairoSVG](https://cairosvg.org/) (and the Cairo library, `brew install cairo` on macOS). It writes into `out/` in the current directory:
+`gen.py` needs Python with [CairoSVG](https://cairosvg.org/) (and the Cairo library, `brew install cairo` on macOS; with Homebrew on Apple Silicon, also `export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib` so CairoSVG finds it). It writes into `out/` in the current directory:
 
 ```sh
 cd design/icon/source
