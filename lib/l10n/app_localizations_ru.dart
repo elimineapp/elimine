@@ -16,10 +16,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get newSubstanceTile => 'Новое вещество';
 
   @override
-  String get recentTitle => 'Последние';
+  String get historyTitle => 'История';
 
   @override
-  String get historyTitle => 'История';
+  String get backToTop => 'Наверх';
 
   @override
   String get emptyIntakes => 'Записей пока нет';
@@ -34,43 +34,78 @@ class AppLocalizationsRu extends AppLocalizations {
   String get neverLogged => 'Ещё не было';
 
   @override
-  String get relativeToday => 'сегодня';
+  String get elapsedJustNow => 'только что';
 
   @override
-  String get relativeYesterday => 'вчера';
+  String elapsedMinutes(int minutes) {
+    return '$minutes мин назад';
+  }
 
   @override
-  String relativeDaysAgo(int count) {
+  String elapsedHours(int hours) {
+    return '$hours ч назад';
+  }
+
+  @override
+  String elapsedHoursMinutes(int hours, int minutes) {
+    return '$hours ч $minutes мин назад';
+  }
+
+  @override
+  String elapsedDaysHours(int days, int hours) {
+    return '$days дн. $hours ч назад';
+  }
+
+  @override
+  String elapsedDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
-      count,
+      days,
       locale: localeName,
-      other: '$count дня назад',
-      many: '$count дней назад',
-      few: '$count дня назад',
-      one: '$count день назад',
+      other: '$days дня назад',
+      many: '$days дней назад',
+      few: '$days дня назад',
+      one: '$days день назад',
     );
     return '$_temp0';
   }
 
   @override
-  String relativeMonthsAgo(int count) {
+  String elapsedMonthsDays(int months, int days) {
+    return '$months мес. $days дн. назад';
+  }
+
+  @override
+  String elapsedMonths(int months) {
     String _temp0 = intl.Intl.pluralLogic(
-      count,
+      months,
       locale: localeName,
-      other: '$count мес. назад',
+      other: '$months мес. назад',
     );
     return '$_temp0';
   }
 
   @override
-  String relativeYearsAgo(int count) {
+  String elapsedYearsMonths(int years, int months) {
     String _temp0 = intl.Intl.pluralLogic(
-      count,
+      years,
       locale: localeName,
-      other: '$count года назад',
-      many: '$count лет назад',
-      few: '$count года назад',
-      one: '$count год назад',
+      other: '$years года',
+      many: '$years лет',
+      few: '$years года',
+      one: '$years год',
+    );
+    return '$_temp0 $months мес. назад';
+  }
+
+  @override
+  String elapsedYears(int years) {
+    String _temp0 = intl.Intl.pluralLogic(
+      years,
+      locale: localeName,
+      other: '$years года назад',
+      many: '$years лет назад',
+      few: '$years года назад',
+      one: '$years год назад',
     );
     return '$_temp0';
   }

@@ -18,7 +18,7 @@ Home SHALL show the app name and the current date in its header, and no other ac
 - **AND** Settings is opened through "Settings" in the bottom navigation bar
 
 ### Requirement: Substance tiles
-Home SHALL show every active (not archived) substance as a full-width tile in a single column, in the user's substance order. A tile SHALL be tinted with the substance color and SHALL show the substance icon on a circle filled with that color, the name without the unit on up to two lines, and the last intake as its dose and a relative day ("today", "yesterday", "12 days ago", "2 months ago"), or only the relative day when that intake had no dose. A substance without intakes SHALL show "Not logged yet". Tapping a tile SHALL open the substance screen.
+Home SHALL show every active (not archived) substance as a full-width tile in a single column, in the user's substance order. A tile SHALL be tinted with the substance color and SHALL show the substance icon on a circle filled with that color, the name without the unit on up to two lines, and the last intake as its dose and the time since it, as defined by the localization capability ("12 days ago", "1 year 11 mo ago"), or only the time since it when that intake had no dose. A substance without intakes SHALL show "Not logged yet". Tapping a tile SHALL open the substance screen.
 
 #### Scenario: Name without the unit
 - **WHEN** a substance "Coffee" has the unit "mg"
@@ -37,8 +37,12 @@ Home SHALL show every active (not archived) substance as a full-width tile in a 
 - **THEN** its tile shows "250 mg · 12 days ago"
 
 #### Scenario: Last intake without a dose
-- **WHEN** a substance's last intake had no dose and was yesterday
-- **THEN** its tile shows "yesterday"
+- **WHEN** a substance's last intake had no dose and was 5 hours and 12 minutes ago
+- **THEN** its tile shows "5 h 12 min ago"
+
+#### Scenario: Long abstinence
+- **WHEN** a substance's last intake was 0.5 l, one year, eleven months and five days ago
+- **THEN** its tile shows "0.5 l · 1 year 11 mo ago"
 
 #### Scenario: Tile without history
 - **WHEN** a substance has no intakes
@@ -55,27 +59,20 @@ The last item of the substance list SHALL be a "New substance" row, which opens 
 - **WHEN** the app starts with no data
 - **THEN** Home shows only the "New substance" row
 
-### Requirement: Recent intakes
-Home SHALL list the 10 most recent intakes across all substances under "Recent", newest first, each with its date and time, substance and dose. Tapping an entry SHALL open its edit sheet and swiping it away SHALL delete it, as defined by the intake-logging capability.
-
-#### Scenario: Recent list
-- **WHEN** intakes of several substances exist
-- **THEN** "Recent" shows the latest 10 of them, newest first
-
-#### Scenario: Editing from Recent
-- **WHEN** the user taps an entry under "Recent"
-- **THEN** the "Edit entry" sheet for that intake opens on Home
-
 ### Requirement: Archive entry
-When at least one substance is archived, Home SHALL end with an "Archive (N)" row, N being the number of archived substances, that opens the archive screen. Without archived substances the row SHALL NOT be shown.
+When at least one substance is archived, Home SHALL show an "Archive (N)" row directly below the "New substance" row and above "History", N being the number of archived substances. The row SHALL open the archive screen. Without archived substances the row SHALL NOT be shown.
 
 #### Scenario: Archived substances exist
 - **WHEN** two substances are archived
-- **THEN** Home ends with "Archive (2)", which opens the archive screen
+- **THEN** Home shows "Archive (2)" between "New substance" and "History", and it opens the archive screen
+
+#### Scenario: Long history
+- **WHEN** a substance is archived and there are hundreds of intakes
+- **THEN** "Archive (1)" is reached without scrolling through the history
 
 #### Scenario: Nothing archived
 - **WHEN** no substance is archived
-- **THEN** Home shows no archive row
+- **THEN** Home shows no archive row and "History" follows "New substance"
 
 ### Requirement: Intake weeks on a tile
 Each substance tile SHALL show a strip of 12 marks for the 12 calendar weeks ending with the current week, oldest on the left. A mark SHALL be filled with the substance color when the substance had at least one intake that week, with or without a dose, and SHALL be empty otherwise. A filled mark SHALL be faint for one intake, stronger for two and in the full substance color for three or more. Weeks SHALL start on the day chosen in Settings, and an intake SHALL count in the week of its local day.
@@ -153,3 +150,47 @@ Each substance tile SHALL offer the accessibility actions "Move up" and "Move do
 #### Scenario: Edges of the list
 - **WHEN** a screen reader focuses the first tile
 - **THEN** it offers "Move down" but not "Move up"
+
+### Requirement: History feed
+Home SHALL list all intakes across all substances under "History", newest first, each with its date and time, substance and dose. Older intakes SHALL load as the user scrolls toward the end of the list, without a button, until the oldest one is shown. Entries already shown SHALL stay in place while more load. Without intakes "History" SHALL show "Nothing logged yet". Tapping an entry SHALL open its edit sheet and swiping it away SHALL delete it, as defined by the intake-logging capability.
+
+#### Scenario: History order
+- **WHEN** intakes of several substances exist
+- **THEN** "History" lists them across substances, newest first
+
+#### Scenario: Scrolling to older intakes
+- **WHEN** there are 300 intakes and the user keeps scrolling down "History"
+- **THEN** older intakes keep appearing until the oldest one is shown
+- **AND** the list does not jump back while they load
+
+#### Scenario: Empty history
+- **WHEN** there are no intakes
+- **THEN** "History" shows "Nothing logged yet"
+
+#### Scenario: Editing from History
+- **WHEN** the user taps an entry under "History"
+- **THEN** the "Edit entry" sheet for that intake opens on Home
+
+### Requirement: Back to top
+When Home is scrolled down by more than twice its visible height and the user scrolls up, Home SHALL show a "Back to top" button above the bottom navigation bar. Scrolling down or coming within that distance of the top SHALL hide it. Tapping it SHALL scroll Home to the top, smoothly, or at once when animations are removed in the system settings.
+
+#### Scenario: Scrolling up far down the feed
+- **WHEN** the user has scrolled far down "History" and starts scrolling up
+- **THEN** the "Back to top" button appears
+
+#### Scenario: Scrolling down
+- **WHEN** the "Back to top" button is shown and the user scrolls down
+- **THEN** the button hides
+
+#### Scenario: Near the top
+- **WHEN** Home is scrolled down by less than twice its visible height
+- **THEN** the "Back to top" button is not shown
+
+#### Scenario: Going back to the top
+- **WHEN** the user taps "Back to top"
+- **THEN** Home scrolls to the top and shows the first substance tile
+- **AND** the button hides
+
+#### Scenario: Animations removed
+- **WHEN** animations are removed in the system settings and the user taps "Back to top"
+- **THEN** Home shows its top at once, without scrolling through the feed

@@ -89,10 +89,59 @@ void main() {
     );
     await tester.tap(find.text('Archive (1)'));
     await settle(tester);
-    expect(find.text('1 entry'), findsOneWidget);
+    expect(find.text('just now · 1 entry'), findsOneWidget);
     await tester.tap(find.byKey(Key('archiveMenu-$id')));
     await tester.pumpAndSettle();
   }
+
+  testWidgets('archive entries show the last intake and the entry count', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final substances = SubstanceService(db);
+      final intakes = IntakeService(db);
+      final alcohol = await substances.create((
+        name: 'Alcohol',
+        unit: 'l',
+        color: 'red',
+        icon: 'pill',
+        doses: const [0.5],
+      ));
+      final empty = await substances.create((
+        name: 'Empty',
+        unit: '',
+        color: 'blue',
+        icon: 'pill',
+        doses: const [],
+      ));
+      for (final at in [DateTime(2024, 3, 1), DateTime(2024, 10, 24, 10)]) {
+        await intakes.log(substanceId: alcohol, amount: 0.5, takenAt: at);
+      }
+      await substances.archive(alcohol);
+      await substances.archive(empty);
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          clockProvider.overrideWithValue(() => DateTime(2026, 9, 29, 10)),
+        ],
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ArchiveScreen(),
+        ),
+      ),
+    );
+    await settle(tester);
+
+    expect(find.text('0.5 l · 1 year 11 mo ago · 2 entries'), findsOneWidget);
+    expect(find.text('No entries'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('no archive row while nothing is archived', (tester) async {
     await pumpHome(tester, archive: false);
@@ -187,7 +236,7 @@ void main() {
 
   testWidgets('Restore puts the substance back on Home', (tester) async {
     final id = await pumpHome(tester);
-    // Only its entry in "Recent": archived substances have no tile.
+    // Only its entry in "History": archived substances have no tile.
     expect(find.text('Old'), findsOneWidget);
 
     await openArchiveMenu(tester, id);

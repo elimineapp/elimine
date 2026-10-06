@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -52,6 +54,39 @@ final appVersionProvider = FutureProvider<String>(
   (ref) async => (await PackageInfo.fromPlatform()).version,
 );
 
+/// The current time. Tests override it to move time forward.
+final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// The current time, renewed at the start of every minute, so times since an
+/// intake on screen stay current without any input.
+final minuteTickProvider = StreamProvider<DateTime>((ref) {
+  final clock = ref.watch(clockProvider);
+  final ticks = StreamController<DateTime>();
+  Timer? timer;
+  void schedule() {
+    final now = clock();
+    final next = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute + 1,
+    );
+    timer = Timer(next.difference(now), () {
+      ticks.add(clock());
+      schedule();
+    });
+  }
+
+  ticks.add(clock());
+  schedule();
+  ref.onDispose(() {
+    timer?.cancel();
+    ticks.close();
+  });
+  return ticks.stream;
+});
+
 final substancesProvider = StreamProvider<List<SubstanceWithLast>>(
   (ref) => ref.watch(databaseProvider).watchSubstancesWithLast(),
 );
@@ -60,8 +95,30 @@ final archivedSubstancesProvider = StreamProvider<List<SubstanceWithCount>>(
   (ref) => ref.watch(databaseProvider).watchArchivedSubstances(),
 );
 
-final recentIntakesProvider = StreamProvider<List<IntakeWithSubstance>>(
-  (ref) => ref.watch(databaseProvider).watchRecentIntakes(),
+/// How many intakes of the History feed on Home are loaded: a page more each
+/// time the user scrolls near the end of what is loaded.
+class HistoryLimit extends Notifier<int> {
+  static const page = 50;
+
+  @override
+  int build() => page;
+
+  /// Loads the next page once all [loaded] intakes are shown.
+  void more(int loaded) {
+    if (loaded >= state) state = loaded + page;
+  }
+}
+
+final historyLimitProvider = NotifierProvider<HistoryLimit, int>(
+  HistoryLimit.new,
+);
+
+/// The History feed on Home: the latest intakes across all substances, as
+/// many as [historyLimitProvider] allows.
+final historyProvider = StreamProvider<List<IntakeWithSubstance>>(
+  (ref) => ref
+      .watch(databaseProvider)
+      .watchRecentIntakes(limit: ref.watch(historyLimitProvider)),
 );
 
 final substanceProvider = StreamProvider.family<Substance?, String>(

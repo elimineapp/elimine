@@ -28,10 +28,16 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<void> pumpHome(WidgetTester tester) async {
+  Future<void> pumpHome(
+    WidgetTester tester, {
+    DateTime Function()? clock,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(db)],
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          if (clock != null) clockProvider.overrideWithValue(clock),
+        ],
         child: MaterialApp(
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -74,7 +80,7 @@ void main() {
 
     expect(find.text('Coffee'), findsWidgets);
     expect(find.text('Coffee, mg'), findsNothing);
-    expect(find.text('250 mg · today'), findsOneWidget);
+    expect(find.text('250 mg · just now'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -93,16 +99,16 @@ void main() {
       await IntakeService(db).log(
         substanceId: id,
         amount: null,
-        takenAt: DateTime.now().subtract(const Duration(days: 1)),
+        takenAt: DateTime.now().subtract(const Duration(hours: 5, minutes: 12)),
       );
     });
 
     await pumpHome(tester);
 
-    // The tile: name without a unit, then only the relative day.
+    // The tile: name without a unit, then only the time since the intake.
     expect(find.text('Tea'), findsWidgets);
-    expect(find.text('yesterday'), findsOneWidget);
-    // The "Recent" entry: no dose, and nothing in its place.
+    expect(find.text('5 h 12 min ago'), findsOneWidget);
+    // The "History" entry: no dose, and nothing in its place.
     expect(
       tester
           .widget<ListTile>(
@@ -118,7 +124,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('tapping a "Recent" entry opens its edit sheet', (tester) async {
+  testWidgets('tapping a "History" entry opens its edit sheet', (tester) async {
     await tester.runAsync(() async {
       final id = await SubstanceService(db).create((
         name: 'Coffee',
@@ -397,6 +403,238 @@ void main() {
 
       await tester.pumpWidget(const SizedBox());
       handle.dispose();
+    });
+  });
+
+  testWidgets('the time since the last intake updates every minute', (
+    tester,
+  ) async {
+    var now = DateTime(2026, 9, 29, 10);
+    await tester.runAsync(() async {
+      final id = await SubstanceService(db).create((
+        name: 'Coffee',
+        unit: 'mg',
+        color: 'amber',
+        icon: 'coffee',
+        doses: const [250],
+      ));
+      await IntakeService(db).log(
+        substanceId: id,
+        amount: 250,
+        takenAt: now.subtract(const Duration(seconds: 30)),
+      );
+    });
+
+    await pumpHome(tester, clock: () => now);
+    expect(find.text('250 mg · just now'), findsOneWidget);
+
+    now = now.add(const Duration(minutes: 1));
+    await tester.pump(const Duration(minutes: 1));
+    expect(find.text('250 mg · 1 min ago'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  group('History feed', () {
+    /// "Coffee" with [count] intakes an hour apart; the newest is 1 mg, the
+    /// oldest [count] mg. "Old" is archived when [archived] is set.
+    Future<void> seed(
+      WidgetTester tester,
+      int count, {
+      bool archived = false,
+    }) async {
+      await tester.runAsync(() async {
+        final substances = SubstanceService(db);
+        final id = await substances.create((
+          name: 'Coffee',
+          unit: 'mg',
+          color: 'amber',
+          icon: 'coffee',
+          doses: const [],
+        ));
+        final now = DateTime.now();
+        for (var i = 1; i <= count; i++) {
+          await IntakeService(db).log(
+            substanceId: id,
+            amount: i.toDouble(),
+            takenAt: now.subtract(Duration(hours: i)),
+          );
+        }
+        if (archived) {
+          await substances.archive(
+            await substances.create((
+              name: 'Old',
+              unit: '',
+              color: 'blue',
+              icon: 'pill',
+              doses: const [],
+            )),
+          );
+        }
+      });
+    }
+
+    ScrollPosition position(WidgetTester tester) =>
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+
+    /// Drags Home by [dy] in steps, as a finger would.
+    Future<void> drag(WidgetTester tester, double dy) async {
+      const step = 400.0;
+      for (var left = dy.abs(); left > 0; left -= step) {
+        final move = left < step ? left : step;
+        await tester.drag(
+          find.byType(CustomScrollView),
+          Offset(0, dy < 0 ? -move : move),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    double backToTopOpacity(WidgetTester tester) => tester
+        .widget<AnimatedOpacity>(
+          find.ancestor(
+            of: find.byKey(const Key('backToTop')),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        )
+        .opacity;
+
+    testWidgets('loads older intakes while scrolling, without jumping', (
+      tester,
+    ) async {
+      await seed(tester, 120);
+      await pumpHome(tester);
+
+      expect(find.text('History'), findsOneWidget);
+      expect(find.text('1 mg'), findsOneWidget);
+      expect(find.text('120 mg', skipOffstage: false), findsNothing);
+
+      // Scroll until the feed stops growing: every intake gets loaded.
+      var seen = 0;
+      for (var i = 0; i < 40 && find.text('120 mg').evaluate().isEmpty; i++) {
+        final before = position(tester).pixels;
+        await drag(tester, -1200);
+        final after = position(tester).pixels;
+        // Loading a page never moves the feed back.
+        expect(after, greaterThanOrEqualTo(before));
+        seen = i;
+      }
+      expect(find.text('120 mg'), findsOneWidget, reason: 'after $seen drags');
+
+      // An entry from a later page still opens its edit sheet.
+      await tester.tap(find.text('120 mg'));
+      await tester.pumpAndSettle();
+      expect(find.text('Edit entry'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('an entry from a later page can be swiped away', (
+      tester,
+    ) async {
+      await seed(tester, 120);
+      await pumpHome(tester);
+      for (var i = 0; i < 40 && find.text('100 mg').evaluate().isEmpty; i++) {
+        await drag(tester, -800);
+      }
+
+      await tester.ensureVisible(find.text('100 mg'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.text('100 mg'), const Offset(-600, 0));
+      await tester.pumpAndSettle();
+      // The deletion is saved in real time.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('100 mg'), findsNothing);
+      expect(find.text('Entry deleted'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the archive row sits between "New substance" and "History"', (
+      tester,
+    ) async {
+      await seed(tester, 120, archived: true);
+      await pumpHome(tester);
+
+      final archive = find.byKey(const Key('archiveEntry'));
+      expect(archive.hitTestable(), findsOneWidget);
+      final y = tester.getCenter(archive).dy;
+      expect(tester.getCenter(find.text('New substance')).dy, lessThan(y));
+      expect(tester.getCenter(find.text('History')).dy, greaterThan(y));
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('"Back to top" shows when heading up from far down', (
+      tester,
+    ) async {
+      await seed(tester, 120);
+      await pumpHome(tester);
+      final screen = position(tester).viewportDimension;
+
+      expect(backToTopOpacity(tester), 0);
+
+      // Down past twice the screen: still hidden while going down.
+      await drag(tester, -3 * screen);
+      expect(position(tester).pixels, greaterThan(2 * screen));
+      expect(backToTopOpacity(tester), 0);
+
+      // Up a little: it shows.
+      await drag(tester, 100);
+      expect(backToTopOpacity(tester), 1);
+
+      // Down again: it hides.
+      await drag(tester, -100);
+      expect(backToTopOpacity(tester), 0);
+
+      // Up again, then tap it: Home is back at the top.
+      await drag(tester, 100);
+      await tester.tap(find.byKey(const Key('backToTop')));
+      await tester.pumpAndSettle();
+      expect(position(tester).pixels, 0);
+      expect(find.text('Coffee').hitTestable(), findsWidgets);
+      expect(backToTopOpacity(tester), 0);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('"Back to top" does not show near the top', (tester) async {
+      await seed(tester, 120);
+      await pumpHome(tester);
+      final screen = position(tester).viewportDimension;
+
+      await drag(tester, -1.5 * screen);
+      await drag(tester, 100);
+      expect(backToTopOpacity(tester), 0);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('with animations removed, "Back to top" jumps at once', (
+      tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await seed(tester, 120);
+      await pumpHome(tester);
+      final screen = position(tester).viewportDimension;
+
+      await drag(tester, -4 * screen);
+      await drag(tester, 100);
+      await tester.tap(find.byKey(const Key('backToTop')));
+      await tester.pump();
+
+      expect(position(tester).pixels, 0);
+
+      await tester.pumpWidget(const SizedBox());
     });
   });
 }

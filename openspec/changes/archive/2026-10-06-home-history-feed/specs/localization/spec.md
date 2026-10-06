@@ -1,20 +1,4 @@
-# localization Specification
-
-## Purpose
-The languages of the interface and how dates, numbers and plurals follow the user's locale.
-
-## Requirements
-
-### Requirement: Supported languages
-The interface SHALL be available in English and Russian and follow the device language, falling back to English for other languages. User-entered text such as substance names and units SHALL be shown as entered.
-
-#### Scenario: Russian device
-- **WHEN** the device language is Russian
-- **THEN** the interface is in Russian
-
-#### Scenario: Unsupported language
-- **WHEN** the device language is German
-- **THEN** the interface is in English
+## MODIFIED Requirements
 
 ### Requirement: Locale-aware formatting
 Dates, weekday and month names, decimal numbers and plural forms SHALL follow the interface language.
@@ -22,6 +6,8 @@ Dates, weekday and month names, decimal numbers and plural forms SHALL follow th
 #### Scenario: Russian plurals and decimals
 - **WHEN** the interface is Russian
 - **THEN** times since an intake use Russian plural forms and decimals use a comma
+
+## ADDED Requirements
 
 ### Requirement: Time since an intake
 The time since an intake SHALL be shown in the step that fits: under a minute "just now"; under an hour minutes; under a day hours and minutes; under 7 days days and hours; under a month days; under a year months and days; under 10 years years and months; from 10 years on years alone. When the second unit is zero, it SHALL be left out and the first unit written as in a single-unit step.

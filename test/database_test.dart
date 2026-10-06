@@ -100,10 +100,41 @@ void main() {
       final archived = await db.watchArchivedSubstances().first;
       expect(
         [
-          for (final (:substance, :intakes) in archived)
+          for (final (:substance, :intakes, last: _) in archived)
             (substance.name, intakes),
         ],
         [('A', 1), ('B', 0)],
+      );
+    });
+
+    test('archived substances come with their latest visible intake', () async {
+      final a = await create('A');
+      final b = await create('B');
+      final now = DateTime.now();
+      await intakes.log(
+        substanceId: a,
+        amount: 1,
+        takenAt: now.subtract(const Duration(days: 30)),
+      );
+      final latest = await intakes.log(
+        substanceId: a,
+        amount: 2,
+        takenAt: now.subtract(const Duration(days: 20)),
+      );
+      await intakes.delete(
+        await intakes.log(
+          substanceId: a,
+          amount: 3,
+          takenAt: now.subtract(const Duration(days: 10)),
+        ),
+      );
+      await substances.archive(a);
+      await substances.archive(b);
+
+      final archived = await db.watchArchivedSubstances().first;
+      expect(
+        [for (final item in archived) (item.substance.name, item.last?.id)],
+        [('A', latest), ('B', null)],
       );
     });
 
@@ -232,7 +263,7 @@ void main() {
           (await db.watchSubstancesWithLast().first).single.last?.id,
           older,
         );
-        expect(await db.watchRecentIntakes().first, hasLength(1));
+        expect(await db.watchRecentIntakes(limit: 10).first, hasLength(1));
         expect(await db.hasIntakes(id), isTrue);
 
         await intakes.delete(older);

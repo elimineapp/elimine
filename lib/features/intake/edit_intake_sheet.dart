@@ -23,7 +23,7 @@ Future<void> showEditIntakeSheet(
   final l = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.of(context);
   // Read up front: the tile that opened the sheet may be gone once it closes,
-  // e.g. when the new time moves the intake out of "Recent".
+  // e.g. when the new time moves the intake out of the loaded part of "History".
   final service = ref.read(intakeServiceProvider);
 
   final outcome = await showModalBottomSheet<_Outcome>(

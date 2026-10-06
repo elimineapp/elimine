@@ -16,10 +16,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newSubstanceTile => 'New substance';
 
   @override
-  String get recentTitle => 'Recent';
+  String get historyTitle => 'History';
 
   @override
-  String get historyTitle => 'History';
+  String get backToTop => 'Back to top';
 
   @override
   String get emptyIntakes => 'Nothing logged yet';
@@ -34,40 +34,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get neverLogged => 'Not logged yet';
 
   @override
-  String get relativeToday => 'today';
+  String get elapsedJustNow => 'just now';
 
   @override
-  String get relativeYesterday => 'yesterday';
+  String elapsedMinutes(int minutes) {
+    return '$minutes min ago';
+  }
 
   @override
-  String relativeDaysAgo(int count) {
+  String elapsedHours(int hours) {
+    return '$hours h ago';
+  }
+
+  @override
+  String elapsedHoursMinutes(int hours, int minutes) {
+    return '$hours h $minutes min ago';
+  }
+
+  @override
+  String elapsedDaysHours(int days, int hours) {
+    return '$days d $hours h ago';
+  }
+
+  @override
+  String elapsedDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
-      count,
+      days,
       locale: localeName,
-      other: '$count days ago',
-      one: '$count day ago',
+      other: '$days days ago',
+      one: '$days day ago',
     );
     return '$_temp0';
   }
 
   @override
-  String relativeMonthsAgo(int count) {
+  String elapsedMonthsDays(int months, int days) {
+    return '$months mo $days d ago';
+  }
+
+  @override
+  String elapsedMonths(int months) {
     String _temp0 = intl.Intl.pluralLogic(
-      count,
+      months,
       locale: localeName,
-      other: '$count months ago',
-      one: '$count month ago',
+      other: '$months months ago',
+      one: '$months month ago',
     );
     return '$_temp0';
   }
 
   @override
-  String relativeYearsAgo(int count) {
+  String elapsedYearsMonths(int years, int months) {
     String _temp0 = intl.Intl.pluralLogic(
-      count,
+      years,
       locale: localeName,
-      other: '$count years ago',
-      one: '$count year ago',
+      other: '$years years',
+      one: '$years year',
+    );
+    return '$_temp0 $months mo ago';
+  }
+
+  @override
+  String elapsedYears(int years) {
+    String _temp0 = intl.Intl.pluralLogic(
+      years,
+      locale: localeName,
+      other: '$years years ago',
+      one: '$years year ago',
     );
     return '$_temp0';
   }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
 import '../../core/db/queries.dart';
+import '../../core/l10n/format.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/substance_badge.dart';
 import '../substance/delete_substance.dart';
@@ -34,6 +35,9 @@ class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final archived = ref.watch(archivedSubstancesProvider);
+    // Rebuilt every minute, so the time since the last intake stays current.
+    ref.watch(minuteTickProvider);
+    final now = ref.watch(clockProvider)();
 
     ref.listen(archivedSubstancesProvider, (_, next) {
       if (next case AsyncData(value: [])) {
@@ -52,7 +56,12 @@ class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
             return ListTile(
               leading: SubstanceBadge(color: s.color, icon: s.icon),
               title: Text(s.name),
-              subtitle: Text(l.entriesCount(item.intakes)),
+              subtitle: Text(
+                [
+                  if (item.last != null) l.lastIntake(item.last, s.unit, now),
+                  l.entriesCount(item.intakes),
+                ].join(' · '),
+              ),
               trailing: PopupMenuButton<_Action>(
                 key: Key('archiveMenu-${s.id}'),
                 onSelected: (action) => _act(action, item),

@@ -91,7 +91,7 @@ The substance screen SHALL list all intakes of the substance, newest first, unde
 
 #### Scenario: Intake without a dose in a list
 - **WHEN** an intake has no dose
-- **THEN** its entry in History and in "Recent" shows nothing where the dose would be and never reads "No dose"
+- **THEN** its entry in the substance history and in "History" on Home shows nothing where the dose would be and never reads "No dose"
 
 ### Requirement: Deleting an intake
 Swiping an intake away in any list, or tapping "Delete" in its edit sheet, SHALL delete it and show a snackbar "Entry deleted" with "Undo", which restores it unchanged. "Delete" SHALL also close the sheet.
@@ -144,7 +144,7 @@ The edit sheet SHALL start from the intake's time. Tapping the time row SHALL op
 - **THEN** the sheet shows 23:30 on the intake's original date
 
 ### Requirement: Saving an edited intake
-"Save" in the edit sheet SHALL store the selected time and dose, close the sheet and show a snackbar "Entry updated" with "Undo", which restores the previous time and dose. History, "Recent", Home tiles and analytics SHALL reflect the change. Saving without changes SHALL close the sheet without a snackbar. Closing the sheet any other way SHALL keep the intake unchanged.
+"Save" in the edit sheet SHALL store the selected time and dose, close the sheet and show a snackbar "Entry updated" with "Undo", which restores the previous time and dose. The substance history, "History" on Home, Home tiles and analytics SHALL reflect the change. Saving without changes SHALL close the sheet without a snackbar. Closing the sheet any other way SHALL keep the intake unchanged.
 
 #### Scenario: Adding a forgotten dose
 - **WHEN** the user opens an intake without a dose, selects 250 mg and taps "Save"

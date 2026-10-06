@@ -117,6 +117,83 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  group('reselecting Home', () {
+    Future<void> seed(WidgetTester tester) => tester.runAsync(() async {
+      final id = await SubstanceService(db).create((
+        name: 'Coffee',
+        unit: 'mg',
+        color: 'amber',
+        icon: 'coffee',
+        doses: const [],
+      ));
+      final now = DateTime.now();
+      for (var i = 1; i <= 60; i++) {
+        await IntakeService(db).log(
+          substanceId: id,
+          amount: i.toDouble(),
+          takenAt: now.subtract(Duration(hours: i)),
+        );
+      }
+    });
+
+    ScrollPosition home(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find
+              .descendant(
+                of: find.byType(HomeScreen),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        )
+        .position;
+
+    testWidgets('far down, scrolls Home to the top', (tester) async {
+      await seed(tester);
+      await pumpApp(tester);
+      home(tester).jumpTo(3000);
+      await tester.pumpAndSettle();
+
+      await tester.tap(tab('Home'));
+      await tester.pumpAndSettle();
+
+      expect(home(tester).pixels, 0);
+      expect(find.text('Coffee').hitTestable(), findsWidgets);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('at the top, changes nothing', (tester) async {
+      await seed(tester);
+      await pumpApp(tester);
+
+      await tester.tap(tab('Home'));
+      await tester.pumpAndSettle();
+
+      expect(home(tester).pixels, 0);
+      expect(find.byType(HomeScreen), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('coming from another tab keeps the scroll position', (
+      tester,
+    ) async {
+      await seed(tester);
+      await pumpApp(tester);
+      home(tester).jumpTo(1500);
+      await tester.pumpAndSettle();
+
+      await tester.tap(tab('Analytics'));
+      await tester.pumpAndSettle();
+      await tester.tap(tab('Home'));
+      await tester.pumpAndSettle();
+
+      expect(home(tester).pixels, 1500);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
   group('tab transition', () {
     /// The opacity and scale a tab is drawn with by the tab container.
     ({double opacity, double scale}) look(WidgetTester tester, Type screen) {
@@ -283,7 +360,7 @@ void main() {
         await tester.runAsync(() => SettingsService(db).setSheetExpanded());
       }
       await pumpApp(tester);
-      // The tile comes before any "Recent" entry.
+      // The tile comes before any "History" entry.
       await tester.tap(find.text('Coffee').first);
       await tester.pumpAndSettle();
     }
@@ -485,7 +562,7 @@ void main() {
       tester.view.physicalSize = const Size(1080, 2340);
       tester.view.devicePixelRatio = 2.625;
       addTearDown(tester.view.reset);
-      // Coffee is also in "Recent", whose badge must not share the tag.
+      // Coffee is also in "History", whose badge must not share the tag.
       await tester.runAsync(() async {
         await SettingsService(db).setSheetExpanded();
         await IntakeService(db).log(substanceId: id, amount: 250);
@@ -744,7 +821,7 @@ void main() {
 
       expect(find.byType(SubstanceScreen), findsNothing);
       expect(find.text('Logged 250 mg'), findsOneWidget);
-      expect(find.text('250 mg · today'), findsOneWidget);
+      expect(find.text('250 mg · just now'), findsOneWidget);
 
       await tester.tap(find.text('Undo'));
       await tester.pumpAndSettle();

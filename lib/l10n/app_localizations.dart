@@ -110,17 +110,17 @@ abstract class AppLocalizations {
   /// **'New substance'**
   String get newSubstanceTile;
 
-  /// No description provided for @recentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent'**
-  String get recentTitle;
-
   /// No description provided for @historyTitle.
   ///
   /// In en, this message translates to:
   /// **'History'**
   String get historyTitle;
+
+  /// No description provided for @backToTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to top'**
+  String get backToTop;
 
   /// No description provided for @emptyIntakes.
   ///
@@ -146,35 +146,65 @@ abstract class AppLocalizations {
   /// **'Not logged yet'**
   String get neverLogged;
 
-  /// No description provided for @relativeToday.
+  /// No description provided for @elapsedJustNow.
   ///
   /// In en, this message translates to:
-  /// **'today'**
-  String get relativeToday;
+  /// **'just now'**
+  String get elapsedJustNow;
 
-  /// No description provided for @relativeYesterday.
+  /// No description provided for @elapsedMinutes.
   ///
   /// In en, this message translates to:
-  /// **'yesterday'**
-  String get relativeYesterday;
+  /// **'{minutes} min ago'**
+  String elapsedMinutes(int minutes);
 
-  /// No description provided for @relativeDaysAgo.
+  /// No description provided for @elapsedHours.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{{count} day ago} other{{count} days ago}}'**
-  String relativeDaysAgo(int count);
+  /// **'{hours} h ago'**
+  String elapsedHours(int hours);
 
-  /// No description provided for @relativeMonthsAgo.
+  /// No description provided for @elapsedHoursMinutes.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{{count} month ago} other{{count} months ago}}'**
-  String relativeMonthsAgo(int count);
+  /// **'{hours} h {minutes} min ago'**
+  String elapsedHoursMinutes(int hours, int minutes);
 
-  /// No description provided for @relativeYearsAgo.
+  /// No description provided for @elapsedDaysHours.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{{count} year ago} other{{count} years ago}}'**
-  String relativeYearsAgo(int count);
+  /// **'{days} d {hours} h ago'**
+  String elapsedDaysHours(int days, int hours);
+
+  /// No description provided for @elapsedDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, one{{days} day ago} other{{days} days ago}}'**
+  String elapsedDays(int days);
+
+  /// No description provided for @elapsedMonthsDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{months} mo {days} d ago'**
+  String elapsedMonthsDays(int months, int days);
+
+  /// No description provided for @elapsedMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{months, plural, one{{months} month ago} other{{months} months ago}}'**
+  String elapsedMonths(int months);
+
+  /// No description provided for @elapsedYearsMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{years, plural, one{{years} year} other{{years} years}} {months} mo ago'**
+  String elapsedYearsMonths(int years, int months);
+
+  /// No description provided for @elapsedYears.
+  ///
+  /// In en, this message translates to:
+  /// **'{years, plural, one{{years} year ago} other{{years} years ago}}'**
+  String elapsedYears(int years);
 
   /// No description provided for @dayToday.
   ///

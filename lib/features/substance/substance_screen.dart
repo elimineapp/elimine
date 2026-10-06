@@ -244,6 +244,8 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
     final loaded = dosesAsync.hasValue && intakesAsync.hasValue;
     // Watched so the hint can decide as soon as the flag is known.
     ref.watch(sheetExpandedProvider);
+    // Keeps the time since the last intake in the header current.
+    ref.watch(minuteTickProvider);
     final theme = Theme.of(context);
 
     if (substance != null && loaded && !_expanded) {

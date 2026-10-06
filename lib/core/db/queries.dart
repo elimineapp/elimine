@@ -4,22 +4,26 @@ import 'database.dart';
 
 typedef SubstanceWithLast = ({Substance substance, Intake? last});
 typedef IntakeWithSubstance = ({Intake intake, Substance substance});
-typedef SubstanceWithCount = ({Substance substance, int intakes});
+typedef SubstanceWithCount = ({Substance substance, int intakes, Intake? last});
 
 extension SharedQueries on AppDatabase {
+  /// Id of the substance's latest non-deleted intake, for a join on the
+  /// substances row.
+  Expression<String> _latestIntakeId() => subqueryExpression<String>(
+    selectOnly(intakes)
+      ..addColumns([intakes.id])
+      ..where(
+        intakes.substanceId.equalsExp(substances.id) &
+            intakes.deletedAt.isNull(),
+      )
+      ..orderBy([OrderingTerm.desc(intakes.takenAt)])
+      ..limit(1),
+  );
+
   /// Active substances with their latest intake, in the user's order.
   Stream<List<SubstanceWithLast>> watchSubstancesWithLast() {
     final latest = alias(intakes, 'latest');
-    final latestId = subqueryExpression<String>(
-      selectOnly(intakes)
-        ..addColumns([intakes.id])
-        ..where(
-          intakes.substanceId.equalsExp(substances.id) &
-              intakes.deletedAt.isNull(),
-        )
-        ..orderBy([OrderingTerm.desc(intakes.takenAt)])
-        ..limit(1),
-    );
+    final latestId = _latestIntakeId();
     final query =
         select(substances)
             .join([leftOuterJoin(latest, latest.id.equalsExp(latestId))])
@@ -89,10 +93,11 @@ extension SharedQueries on AppDatabase {
     return row.read(count) ?? 0;
   }
 
-  /// Archived substances with their visible intake counts, in the user's
-  /// order.
+  /// Archived substances with their visible intake counts and latest
+  /// intake, in the user's order.
   Stream<List<SubstanceWithCount>> watchArchivedSubstances() {
     final count = intakes.id.count();
+    final latest = alias(intakes, 'latest');
     final query =
         select(substances).join([
             leftOuterJoin(
@@ -101,6 +106,7 @@ extension SharedQueries on AppDatabase {
                   intakes.deletedAt.isNull(),
               useColumns: false,
             ),
+            leftOuterJoin(latest, latest.id.equalsExp(_latestIntakeId())),
           ])
           ..addColumns([count])
           ..where(substances.archivedAt.isNotNull())
@@ -112,12 +118,18 @@ extension SharedQueries on AppDatabase {
     return query.watch().map(
       (rows) => [
         for (final row in rows)
-          (substance: row.readTable(substances), intakes: row.read(count) ?? 0),
+          (
+            substance: row.readTable(substances),
+            intakes: row.read(count) ?? 0,
+            last: row.readTableOrNull(latest),
+          ),
       ],
     );
   }
 
-  Stream<List<IntakeWithSubstance>> watchRecentIntakes({int limit = 10}) {
+  /// The [limit] latest non-deleted intakes across all substances, newest
+  /// first.
+  Stream<List<IntakeWithSubstance>> watchRecentIntakes({required int limit}) {
     final query =
         select(intakes).join([
             innerJoin(substances, substances.id.equalsExp(intakes.substanceId)),

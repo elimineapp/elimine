@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/motion/container_transform.dart';
+import '../../app/motion/motion.dart';
 import '../../app/providers.dart';
 import '../../core/appearance.dart';
 import '../../core/db/queries.dart';
@@ -14,18 +16,88 @@ import '../../l10n/app_localizations.dart';
 import '../../widgets/intake_tile.dart';
 import '../../widgets/substance_badge.dart';
 
-class HomeScreen extends ConsumerWidget {
+/// Requests to scroll Home back to the top, counted so that every request
+/// is a change: reselecting "Home" in the bottom navigation bar.
+class HomeScrollToTop extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void request() => state++;
+}
+
+final homeScrollToTopProvider = NotifierProvider<HomeScrollToTop, int>(
+  HomeScrollToTop.new,
+);
+
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final _scroll = ScrollController();
+
+  /// Whether the user's last scroll went up, toward the top.
+  bool _scrollingUp = false;
+
+  bool _showBackToTop = false;
+
+  /// How many screens down "Back to top" starts to show.
+  static const _backToTopScreens = 2;
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    if (notification is UserScrollNotification &&
+        notification.direction != ScrollDirection.idle) {
+      _scrollingUp = notification.direction == ScrollDirection.forward;
+    }
+    final metrics = notification.metrics;
+    final show =
+        _scrollingUp &&
+        metrics.pixels > _backToTopScreens * metrics.viewportDimension;
+    if (show != _showBackToTop) setState(() => _showBackToTop = show);
+    return false;
+  }
+
+  void _toTop() {
+    setState(() {
+      _scrollingUp = false;
+      _showBackToTop = false;
+    });
+    if (!_scroll.hasClients || _scroll.offset <= 0) return;
+    if (Motion.reducedOf(context)) {
+      _scroll.jumpTo(0);
+      return;
+    }
+    // Longer for longer ways, but never a slow crawl through the feed.
+    final ms = (250 + _scroll.offset / 20).clamp(250, 600).round();
+    _scroll.animateTo(
+      0,
+      duration: Duration(milliseconds: ms),
+      curve: Motion.standard,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final substances = ref.watch(substancesProvider);
-    final intakes = ref.watch(recentIntakesProvider);
+    final history = ref.watch(historyProvider);
+    final limit = ref.watch(historyLimitProvider);
     final archived = ref.watch(archivedSubstancesProvider).value ?? const [];
     final marks = ref.watch(weekMarksProvider);
     final today = DateFormat.MMMMEEEEd(l.localeName).format(DateTime.now());
+
+    ref.listen(homeScrollToTopProvider, (_, _) => _toTop());
 
     return Scaffold(
       appBar: AppBar(
@@ -43,68 +115,134 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
       ),
-      body: CustomScrollView(
-        slivers: [
-          switch (substances) {
-            AsyncData(value: final items) => SliverPadding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              sliver: SliverMainAxisGroup(
-                slivers: [
-                  _SubstanceList(items: items, marks: marks),
-                  const SliverToBoxAdapter(child: _NewSubstanceTile()),
-                ],
-              ),
-            ),
-            AsyncError(:final error) => SliverToBoxAdapter(
-              child: _Message('$error'),
-            ),
-            _ => const SliverToBoxAdapter(child: LinearProgressIndicator()),
-          },
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
-              child: Text(l.recentTitle, style: theme.textTheme.titleMedium),
-            ),
-          ),
-          switch (intakes) {
-            AsyncData(value: final items) when items.isEmpty =>
-              SliverToBoxAdapter(child: _Message(l.emptyIntakes)),
-            AsyncData(value: final items) => SliverList.builder(
-              itemCount: items.length,
-              itemBuilder: (context, i) {
-                final (:intake, :substance) = items[i];
-                return IntakeTile(
-                  intake: intake,
-                  unit: substance.unit,
-                  title: substance.name,
-                  leading: SubstanceBadge(
-                    color: substance.color,
-                    icon: substance.icon,
-                  ),
-                );
-              },
-            ),
-            AsyncError(:final error) => SliverToBoxAdapter(
-              child: _Message('$error'),
-            ),
-            _ => const SliverToBoxAdapter(child: SizedBox.shrink()),
-          },
-          // Out of the daily path: below everything else, only when needed.
-          if (archived.isNotEmpty)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: ListTile(
-                  key: const Key('archiveEntry'),
-                  leading: const Icon(Icons.archive_outlined),
-                  title: Text(l.archiveEntry(archived.length)),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/archive'),
+      floatingActionButton: _BackToTop(
+        visible: _showBackToTop,
+        onPressed: _toTop,
+      ),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _onScroll,
+        child: CustomScrollView(
+          controller: _scroll,
+          slivers: [
+            switch (substances) {
+              AsyncData(value: final items) => SliverPadding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                sliver: SliverMainAxisGroup(
+                  slivers: [
+                    _SubstanceList(items: items, marks: marks),
+                    const SliverToBoxAdapter(child: _NewSubstanceTile()),
+                  ],
                 ),
               ),
+              AsyncError(:final error) => SliverToBoxAdapter(
+                child: _Message('$error'),
+              ),
+              _ => const SliverToBoxAdapter(child: LinearProgressIndicator()),
+            },
+            // Above the endless feed, so it stays in reach; quiet, as it is
+            // out of the daily path.
+            if (archived.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: ListTile(
+                    key: const Key('archiveEntry'),
+                    leading: const Icon(Icons.archive_outlined),
+                    title: Text(l.archiveEntry(archived.length)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/archive'),
+                  ),
+                ),
+              ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  archived.isNotEmpty ? 16 : 24,
+                  16,
+                  4,
+                ),
+                child: Text(l.historyTitle, style: theme.textTheme.titleMedium),
+              ),
             ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
-        ],
+            // From the last value while the next page loads, so the feed
+            // neither blanks nor loses its place.
+            switch (history.value) {
+              final items? when items.isEmpty => SliverToBoxAdapter(
+                child: _Message(l.emptyIntakes),
+              ),
+              final items? => SliverList.builder(
+                itemCount: items.length,
+                itemBuilder: (context, i) {
+                  if (i >= items.length - 10 && items.length >= limit) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        ref.read(historyLimitProvider.notifier).more(limit);
+                      }
+                    });
+                  }
+                  final (:intake, :substance) = items[i];
+                  return IntakeTile(
+                    intake: intake,
+                    unit: substance.unit,
+                    title: substance.name,
+                    leading: SubstanceBadge(
+                      color: substance.color,
+                      icon: substance.icon,
+                    ),
+                  );
+                },
+              ),
+              null when history.hasError => SliverToBoxAdapter(
+                child: _Message('${history.error}'),
+              ),
+              null => const SliverToBoxAdapter(child: SizedBox.shrink()),
+            },
+            // Room for "Back to top" over the last entry.
+            const SliverPadding(padding: EdgeInsets.only(bottom: 88)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A small button that takes Home back to the top, shown only while the user
+/// heads up from far down the feed.
+class _BackToTop extends StatelessWidget {
+  const _BackToTop({required this.visible, required this.onPressed});
+
+  final bool visible;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final reduced = Motion.reducedOf(context);
+    final button = FloatingActionButton.small(
+      key: const Key('backToTop'),
+      heroTag: null,
+      tooltip: l.backToTop,
+      onPressed: onPressed,
+      child: const Icon(Icons.arrow_upward),
+    );
+    return IgnorePointer(
+      ignoring: !visible,
+      child: ExcludeSemantics(
+        excluding: !visible,
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: Motion.short,
+          curve: Motion.standard,
+          child: reduced
+              ? button
+              : AnimatedScale(
+                  scale: visible ? 1 : 0.6,
+                  duration: Motion.short,
+                  curve: Motion.standard,
+                  child: button,
+                ),
+        ),
       ),
     );
   }
@@ -222,7 +360,7 @@ class _SubstanceListState extends ConsumerState<_SubstanceList> {
 
 /// A substance in its color: icon, name, last intake and the weeks it was
 /// taken in.
-class _SubstanceTile extends StatelessWidget {
+class _SubstanceTile extends ConsumerWidget {
   const _SubstanceTile({required this.item, required this.weeks});
 
   final SubstanceWithLast item;
@@ -231,13 +369,16 @@ class _SubstanceTile extends StatelessWidget {
   final List<int> weeks;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final (:substance, :last) = item;
+    // Rebuilt every minute, so the time since the last intake stays current.
+    ref.watch(minuteTickProvider);
+    final now = ref.watch(clockProvider)();
     final color = context.substanceColorOf(substance.color);
     final dark = theme.brightness == Brightness.dark;
-    final lastLabel = l.lastIntake(last, substance.unit, DateTime.now());
+    final lastLabel = l.lastIntake(last, substance.unit, now);
 
     return Material(
       color: color.withValues(alpha: dark ? 0.22 : 0.14),
