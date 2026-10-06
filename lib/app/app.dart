@@ -37,10 +37,16 @@ class _ElimineAppState extends ConsumerState<ElimineApp> {
   @override
   Widget build(BuildContext context) {
     const seed = Color(0xFF3F6E5A);
+    final initial = ref.watch(initialPreferencesProvider);
+    final locale = ref.watch(localeProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      // Until the streams emit, what main read before the first frame.
+      locale: locale.hasValue ? locale.value : initial.locale,
+      themeMode: themeMode.value ?? initial.themeMode,
       theme: ThemeData(colorSchemeSeed: seed),
       darkTheme: ThemeData(colorSchemeSeed: seed, brightness: Brightness.dark),
       routerConfig: router,

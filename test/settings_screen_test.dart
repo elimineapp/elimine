@@ -4,7 +4,7 @@ import 'package:elimine/app/providers.dart';
 import 'package:elimine/core/db/database.dart';
 import 'package:elimine/features/backup/backup_files.dart';
 import 'package:elimine/features/backup/backup_format.dart';
-import 'package:elimine/features/backup/settings_screen.dart';
+import 'package:elimine/features/settings/settings_screen.dart';
 import 'package:elimine/l10n/app_localizations.dart';
 import 'package:elimine/services/intake_service.dart';
 import 'package:elimine/services/settings_service.dart';
@@ -67,11 +67,17 @@ void main() {
           backupFilesProvider.overrideWithValue(files),
           appVersionProvider.overrideWith((ref) async => '0.1.0'),
         ],
-        child: MaterialApp(
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: SettingsScreen(clock: () => now),
+        // Follows the chosen language and theme like the app does; the test
+        // device is English and light.
+        child: Consumer(
+          builder: (context, ref, _) => MaterialApp(
+            locale: ref.watch(localeProvider).value,
+            themeMode: ref.watch(themeModeProvider).value ?? ThemeMode.system,
+            darkTheme: ThemeData(brightness: Brightness.dark),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettingsScreen(clock: () => now),
+          ),
         ),
       ),
     );
@@ -235,6 +241,86 @@ void main() {
       () => SettingsService(db).watchWeekStart().first,
     );
     expect(saved, DateTime.sunday);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  Future<void> choose(WidgetTester tester, String row, String option) async {
+    await tester.tap(find.byKey(Key(row)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(option).last);
+    await settle(tester);
+  }
+
+  Finder rowShows(String row, String text) =>
+      find.descendant(of: find.byKey(Key(row)), matching: find.text(text));
+
+  testWidgets('choosing Русский switches the screen to Russian at once', (
+    tester,
+  ) async {
+    await pumpSettings(tester);
+    expect(rowShows('language', 'System'), findsOneWidget);
+
+    await choose(tester, 'language', 'Русский');
+    expect(find.text('Настройки'), findsOneWidget);
+    expect(rowShows('language', 'Русский'), findsOneWidget);
+    expect(rowShows('theme', 'Системная'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('language')));
+    await tester.pumpAndSettle();
+    final options = tester
+        .widgetList<RadioListTile<int>>(find.byType(RadioListTile<int>))
+        .map((t) => (t.title! as Text).data);
+    expect(options, ['Системный', 'English', 'Русский']);
+    await tester.tap(find.text('Системный').last);
+    await settle(tester);
+
+    expect(find.text('Settings'), findsOneWidget);
+    expect(rowShows('language', 'System'), findsOneWidget);
+    final saved = await tester.runAsync(
+      () => SettingsService(db).watchLocale().first,
+    );
+    expect(saved, isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('System language follows the device', (tester) async {
+    tester.platformDispatcher.localesTestValue = const [Locale('ru')];
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    await pumpSettings(tester);
+    expect(rowShows('language', 'Системный'), findsOneWidget);
+
+    await choose(tester, 'language', 'English');
+    expect(rowShows('language', 'English'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the theme follows the device until Light or Dark is chosen', (
+    tester,
+  ) async {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    Brightness brightness() =>
+        Theme.of(tester.element(find.byType(SettingsScreen))).brightness;
+    await pumpSettings(tester);
+    expect(rowShows('theme', 'System'), findsOneWidget);
+    expect(brightness(), Brightness.dark);
+
+    await choose(tester, 'theme', 'Light');
+    expect(rowShows('theme', 'Light'), findsOneWidget);
+    expect(brightness(), Brightness.light);
+
+    await choose(tester, 'theme', 'Dark');
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    await tester.pumpAndSettle();
+    expect(brightness(), Brightness.dark);
+
+    await choose(tester, 'theme', 'System');
+    expect(brightness(), Brightness.light);
+    final saved = await tester.runAsync(
+      () => SettingsService(db).watchThemeMode().first,
+    );
+    expect(saved, ThemeMode.system);
     await tester.pumpWidget(const SizedBox());
   });
 }

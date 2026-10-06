@@ -261,6 +261,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get generalSection => 'Общие';
 
   @override
+  String get language => 'Язык';
+
+  @override
+  String get languageSystem => 'Системный';
+
+  @override
+  String get theme => 'Тема';
+
+  @override
+  String get themeSystem => 'Системная';
+
+  @override
+  String get themeLight => 'Светлая';
+
+  @override
+  String get themeDark => 'Тёмная';
+
+  @override
   String get weekStart => 'Начало недели';
 
   @override

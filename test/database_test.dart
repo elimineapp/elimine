@@ -7,6 +7,7 @@ import 'package:elimine/features/analytics/analytics_queries.dart';
 import 'package:elimine/services/intake_service.dart';
 import 'package:elimine/services/settings_service.dart';
 import 'package:elimine/services/substance_service.dart';
+import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -485,5 +486,59 @@ void main() {
     expect(await settings.watchSheetExpanded().first, isTrue);
     await settings.setSheetExpanded();
     expect(await db.select(db.settings).get(), hasLength(1));
+  });
+
+  test('language follows the device until one is chosen', () async {
+    final settings = SettingsService(db);
+    expect(await settings.watchLocale().first, isNull);
+    await settings.setLocale(const Locale('ru'));
+    expect(await settings.watchLocale().first, const Locale('ru'));
+    await settings.setLocale(const Locale('en'));
+    expect(await settings.watchLocale().first, const Locale('en'));
+    await settings.setLocale(null);
+    expect(await settings.watchLocale().first, isNull);
+    expect(await db.select(db.settings).get(), isEmpty);
+  });
+
+  test('theme follows the device until one is chosen', () async {
+    final settings = SettingsService(db);
+    expect(await settings.watchThemeMode().first, ThemeMode.system);
+    for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+      await settings.setThemeMode(mode);
+      expect(await settings.watchThemeMode().first, mode);
+    }
+    await settings.setThemeMode(ThemeMode.system);
+    expect(await settings.watchThemeMode().first, ThemeMode.system);
+    expect(await db.select(db.settings).get(), isEmpty);
+  });
+
+  test('unknown stored language and theme follow the device', () async {
+    final settings = SettingsService(db);
+    for (final key in ['language', 'themeMode']) {
+      await db
+          .into(db.settings)
+          .insert(SettingsCompanion.insert(key: key, value: 'klingon'));
+    }
+    expect(await settings.watchLocale().first, isNull);
+    expect(await settings.watchThemeMode().first, ThemeMode.system);
+    expect(await settings.readPreferences(), (
+      locale: null,
+      themeMode: ThemeMode.system,
+    ));
+  });
+
+  test('preferences are read at once for the first frame', () async {
+    final settings = SettingsService(db);
+    expect(await settings.readPreferences(), (
+      locale: null,
+      themeMode: ThemeMode.system,
+    ));
+    await settings.setLocale(const Locale('ru'));
+    await settings.setThemeMode(ThemeMode.dark);
+    await settings.setWeekStart(DateTime.sunday);
+    expect(await settings.readPreferences(), (
+      locale: const Locale('ru'),
+      themeMode: ThemeMode.dark,
+    ));
   });
 }

@@ -5,11 +5,15 @@ import 'package:intl/intl.dart';
 import '../../app/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../analytics/labels.dart';
-import 'backup_format.dart';
-import 'backup_service.dart';
+import '../backup/backup_format.dart';
+import '../backup/backup_service.dart';
 
-/// App settings: the first day of the week, the backup (export to a file and
-/// import from one) and the installed version.
+/// Each interface language by its own name, so it reads the same whatever
+/// language the interface is in.
+const _languageNames = {'en': 'English', 'ru': 'Русский'};
+
+/// App settings: the language, the theme, the first day of the week, the
+/// backup (export to a file and import from one) and the installed version.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key, this.clock = DateTime.now});
 
@@ -139,23 +143,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Future<void> _chooseWeekStart(int current) async {
-    final l = AppLocalizations.of(context);
+  /// Offers [options] with their [labels] and saves the one the user picks,
+  /// unless it is [current] or the dialog is dismissed. Options are picked
+  /// by position, since null can be one of them.
+  Future<void> _choose<T>({
+    required String title,
+    required String key,
+    required T current,
+    required List<T> options,
+    required String Function(T) labels,
+    required Future<void> Function(T) save,
+  }) async {
     final chosen = await showDialog<int>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: Text(l.weekStart),
+        title: Text(title),
         children: [
           RadioGroup<int>(
-            groupValue: current,
-            onChanged: (day) => Navigator.pop(context, day),
+            groupValue: options.indexOf(current),
+            onChanged: (i) => Navigator.pop(context, i),
             child: Column(
               children: [
-                for (final day in [DateTime.monday, DateTime.sunday])
+                for (final (i, option) in options.indexed)
                   RadioListTile<int>(
-                    key: Key('weekStart-$day'),
-                    value: day,
-                    title: Text(l.weekdayTitle(day)),
+                    key: Key('$key-$option'),
+                    value: i,
+                    title: Text(labels(option)),
                   ),
               ],
             ),
@@ -163,8 +176,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
-    if (chosen != null && chosen != current) {
-      await ref.read(settingsServiceProvider).setWeekStart(chosen);
+    if (chosen != null && options[chosen] != current) {
+      await save(options[chosen]);
     }
   }
 
@@ -172,7 +185,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final settings = ref.read(settingsServiceProvider);
+    final initial = ref.watch(initialPreferencesProvider);
+    final localeValue = ref.watch(localeProvider);
+    final locale = localeValue.hasValue ? localeValue.value : initial.locale;
+    final themeMode = ref.watch(themeModeProvider).value ?? initial.themeMode;
     final weekStart = ref.watch(weekStartProvider).value ?? DateTime.monday;
+    String languageLabel(Locale? locale) => locale == null
+        ? l.languageSystem
+        : _languageNames[locale.languageCode]!;
+    String themeLabel(ThemeMode mode) => switch (mode) {
+      ThemeMode.system => l.themeSystem,
+      ThemeMode.light => l.themeLight,
+      ThemeMode.dark => l.themeDark,
+    };
     Widget section(String title) => Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
@@ -196,11 +222,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         children: [
           section(l.generalSection),
           ListTile(
+            key: const Key('language'),
+            leading: const Icon(Icons.language),
+            title: Text(l.language),
+            subtitle: Text(languageLabel(locale)),
+            onTap: () => _choose<Locale?>(
+              title: l.language,
+              key: 'language',
+              current: locale,
+              options: [null, ...AppLocalizations.supportedLocales],
+              labels: languageLabel,
+              save: settings.setLocale,
+            ),
+          ),
+          ListTile(
+            key: const Key('theme'),
+            leading: const Icon(Icons.brightness_6_outlined),
+            title: Text(l.theme),
+            subtitle: Text(themeLabel(themeMode)),
+            onTap: () => _choose(
+              title: l.theme,
+              key: 'theme',
+              current: themeMode,
+              options: [ThemeMode.system, ThemeMode.light, ThemeMode.dark],
+              labels: themeLabel,
+              save: settings.setThemeMode,
+            ),
+          ),
+          ListTile(
             key: const Key('weekStart'),
             leading: const Icon(Icons.calendar_today_outlined),
             title: Text(l.weekStart),
             subtitle: Text(l.weekdayTitle(weekStart)),
-            onTap: () => _chooseWeekStart(weekStart),
+            onTap: () => _choose(
+              title: l.weekStart,
+              key: 'weekStart',
+              current: weekStart,
+              options: [DateTime.monday, DateTime.sunday],
+              labels: l.weekdayTitle,
+              save: settings.setWeekStart,
+            ),
           ),
           section(l.backupSection),
           ListTile(

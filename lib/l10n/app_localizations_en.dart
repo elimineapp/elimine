@@ -254,6 +254,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generalSection => 'General';
 
   @override
+  String get language => 'Language';
+
+  @override
+  String get languageSystem => 'System';
+
+  @override
+  String get theme => 'Theme';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
   String get weekStart => 'Week starts on';
 
   @override

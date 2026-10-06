@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -34,6 +35,21 @@ final settingsServiceProvider = Provider<SettingsService>(
 /// First day of the week for the charts, as a [DateTime.weekday].
 final weekStartProvider = StreamProvider<int>(
   (ref) => ref.watch(settingsServiceProvider).watchWeekStart(),
+);
+
+/// The language and theme read before the first frame; `main` overrides it.
+/// They show until [localeProvider] and [themeModeProvider] emit.
+final initialPreferencesProvider = Provider<Preferences>(
+  (ref) => (locale: null, themeMode: ThemeMode.system),
+);
+
+/// The chosen interface language, null to follow the device.
+final localeProvider = StreamProvider<Locale?>(
+  (ref) => ref.watch(settingsServiceProvider).watchLocale(),
+);
+
+final themeModeProvider = StreamProvider<ThemeMode>(
+  (ref) => ref.watch(settingsServiceProvider).watchThemeMode(),
 );
 
 /// Whether a substance screen has ever been expanded on this device.

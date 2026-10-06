@@ -8,7 +8,7 @@ import 'package:elimine/core/db/database.dart';
 import 'package:elimine/core/db/queries.dart';
 import 'package:elimine/features/analytics/analytics.dart';
 import 'package:elimine/features/analytics/analytics_screen.dart';
-import 'package:elimine/features/backup/settings_screen.dart';
+import 'package:elimine/features/settings/settings_screen.dart';
 import 'package:elimine/features/home/home_screen.dart';
 import 'package:elimine/features/substance/substance_form_screen.dart';
 import 'package:elimine/features/substance/substance_screen.dart';

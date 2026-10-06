@@ -7,6 +7,7 @@ import 'package:elimine/features/backup/backup_service.dart';
 import 'package:elimine/services/intake_service.dart';
 import 'package:elimine/services/settings_service.dart';
 import 'package:elimine/services/substance_service.dart';
+import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -106,11 +107,15 @@ void main() {
     await fill(source);
     await SettingsService(source).setWeekStart(DateTime.sunday);
     await SettingsService(source).setSheetExpanded();
+    await SettingsService(source).setLocale(const Locale('ru'));
+    await SettingsService(source).setThemeMode(ThemeMode.dark);
     final json = await backup(source).export();
     await backup(target).apply(await backup(target).plan(decode(json)));
 
     expect(json, isNot(contains('sheetExpanded')));
     expect(json, isNot(contains('weekStart')));
+    expect(json, isNot(contains('language')));
+    expect(json, isNot(contains('themeMode')));
     expect(await target.select(target.settings).get(), isEmpty);
   });
 
