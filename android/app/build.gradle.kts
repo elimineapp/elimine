@@ -15,15 +15,6 @@ val keyProperties = Properties().apply {
 }
 val hasReleaseKey = keyProperties.getProperty("storeFile") != null
 
-// The version code follows the version name (X.Y.Z -> X * 1_000_000 + Y * 1_000 + Z),
-// so it grows with every release and needs no separate bump.
-fun versionCodeOf(versionName: String): Int {
-    val (major, minor, patch) = versionName.substringBefore('-').substringBefore('+')
-        .split('.').map { it.toInt() }
-    require(minor < 1000 && patch < 1000) { "Version $versionName does not fit the version code" }
-    return maxOf(1, major * 1_000_000 + minor * 1_000 + patch)
-}
-
 android {
     namespace = "com.elimine.elimine"
     compileSdk = flutter.compileSdkVersion
@@ -38,7 +29,7 @@ android {
         applicationId = "com.elimine.elimine"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = versionCodeOf(flutter.versionName)
+        versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
@@ -57,6 +48,13 @@ android {
         release {
             signingConfig = signingConfigs.getByName(if (hasReleaseKey) "release" else "debug")
         }
+    }
+
+    // AGP would add a dependency list encrypted for Google Play to the APK
+    // signing block. Nothing else can read it, and F-Droid rejects it.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 }
 

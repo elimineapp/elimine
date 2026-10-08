@@ -58,3 +58,6 @@ design/icon/source/out/
 android/key.properties
 *.jks
 *.keystore
+
+# Downloaded by tool/fetch_sqlite.sh (task deps)
+/third_party/sqlite/sqlite3.c

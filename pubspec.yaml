@@ -4,9 +4,10 @@ description: "Substance intake tracker."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-# Managed by release-please. No build number: the Android version code is
-# derived from this version in android/app/build.gradle.kts.
-version: 0.2.0
+# Managed by release-please, which also raises the build number after `+` by
+# one with every release. The build number is the Android version code, and
+# F-Droid reads both from this line.
+version: 0.2.0+1
 
 environment:
   sdk: ^3.13.4
@@ -92,3 +93,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Compile SQLite from the vendored amalgamation instead of downloading a
+# prebuilt library during the build; see third_party/sqlite/README.md.
+hooks:
+  user_defines:
+    sqlite3:
+      source: source
+      path: third_party/sqlite/sqlite3.c

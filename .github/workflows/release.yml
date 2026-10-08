@@ -85,8 +85,9 @@ jobs:
 
       - name: Version matches the tag
         run: |
-          if ! grep -qx "version: $VERSION" pubspec.yaml; then
-            echo "::error::pubspec.yaml does not have version $VERSION"
+          # release-please writes X.Y.Z+N; N is the Android version code.
+          if ! grep -qxE "version: ${VERSION//./\\.}\+[0-9]+" pubspec.yaml; then
+            echo "::error::pubspec.yaml does not have version $VERSION with a build number"
             exit 1
           fi
 
@@ -113,8 +114,10 @@ jobs:
             echo "keyPassword=$KEY_PASSWORD"
           } > android/key.properties
 
+      # F-Droid publishes this APK only if its own build of the tag is
+      # identical, so the build mirrors F-Droid's build server.
       - name: Build
-        run: flutter build apk --release
+        run: tool/release_build.sh
 
       - name: Signed with the release key
         run: |
@@ -141,4 +144,14 @@ jobs:
 
       - name: Remove the key
         if: always()
-        run: rm -f "$RUNNER_TEMP/release.jks" android/key.properties
+        run: rm -rf "$RUNNER_TEMP/release.jks" android/key.properties /home/vagrant/build/com.elimine.elimine
+
+  # F-Droid publishes this version only if its build equals the APK above.
+  fdroid-check:
+    needs: [target, apk]
+    if: ${{ !failure() && !cancelled() && needs.apk.result == 'success' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/fdroid-check.yml
+    with:
+      ref: ${{ needs.target.outputs.tag }}

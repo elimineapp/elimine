@@ -1,0 +1,207 @@
+# Builds a version the way F-Droid does, from fdroid/com.elimine.elimine.yml,
+# and checks that the APK equals ours apart from the signature. F-Droid skips
+# every version where that fails, so this tells us first. release.yml runs it
+# for each release; it can also be run by hand for a tag or a branch.
+name: F-Droid check
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: >-
+          A release tag (compared with its published APK) or a branch or commit
+          (compared with a release build of it, signed with the debug key)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  REF: ${{ inputs.ref }}
+
+jobs:
+  target:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
+      version: ${{ steps.target.outputs.version }}
+      code: ${{ steps.target.outputs.code }}
+      release: ${{ steps.target.outputs.release }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.REF }}
+          persist-credentials: false
+      - id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          line=$(grep -E '^version: [0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$' pubspec.yaml) || {
+            echo "::error::pubspec.yaml has no version X.Y.Z+N"
+            exit 1
+          }
+          version=${line#version: }
+          code=${version#*+}
+          version=${version%+*}
+
+          recipe=$(sed -n 's/^ *- flutter@//p' fdroid/com.elimine.elimine.yml)
+          ci=$(sed -n 's/^ *flutter-version: "\(.*\)"/\1/p' .github/actions/setup/action.yml)
+          if [ "$recipe" != "$ci" ]; then
+            echo "::error::Flutter $recipe in fdroid/com.elimine.elimine.yml, $ci in .github/actions/setup/action.yml"
+            exit 1
+          fi
+
+          release=false
+          if [ "$REF" = "v$version" ] &&
+            gh release view "$REF" -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' |
+            grep -qx "elimine-$version.apk"; then
+            release=true
+          fi
+          {
+            echo "sha=$(git rev-parse HEAD)"
+            echo "version=$version"
+            echo "code=$code"
+            echo "release=$release"
+          } | tee -a "$GITHUB_OUTPUT"
+
+  # The APK to compare with: the published one, or a release build of the ref.
+  reference:
+    needs: target
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.target.outputs.version }}
+    steps:
+      - name: Published APK
+        if: needs.target.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "v$VERSION" -R "$GITHUB_REPOSITORY" -p "elimine-$VERSION.apk"
+          mv "elimine-$VERSION.apk" reference.apk
+      - if: needs.target.outputs.release != 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - if: needs.target.outputs.release != 'true'
+        uses: ./.github/actions/setup
+      - name: Release build
+        if: needs.target.outputs.release != 'true'
+        run: |
+          tool/release_build.sh
+          cp build/app/outputs/flutter-apk/app-release.apk reference.apk
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reference
+          path: reference.apk
+
+  # Follows the "fdroid build" job of fdroiddata's .gitlab-ci.yml.
+  fdroid-build:
+    needs: target
+    runs-on: ubuntu-latest
+    container: registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie
+    env:
+      ANDROID_HOME: /opt/android-sdk
+      APP: com.elimine.elimine
+      SHA: ${{ needs.target.outputs.sha }}
+      VERSION: ${{ needs.target.outputs.version }}
+      CODE: ${{ needs.target.outputs.code }}
+      RELEASE: ${{ needs.target.outputs.release }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          path: src
+          persist-credentials: false
+      - name: Build like F-Droid
+        run: |
+          exec > >(tee "$RUNNER_TEMP/fdroid.log") 2>&1
+          set -ex
+          test -n "${fdroidserver:-}" || source /etc/profile.d/bsenv.sh
+          apt-get update -q
+          apt-get install -qy --no-install-recommends sudo git openjdk-21-jdk-headless
+          update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+          sdkmanager "platform-tools" "build-tools;31.0.0"
+          rm -rf "$fdroidserver"
+          git clone --depth 1 https://gitlab.com/fdroid/fdroidserver.git "$fdroidserver"
+          export PATH="$fdroidserver:$PATH" PYTHONPATH="$fdroidserver:$fdroidserver/examples"
+
+          # fdroiddata's config (categories and their icons) and Flutter srclib.
+          data="$GITHUB_WORKSPACE/fdroiddata"
+          git clone -q --depth 1 --filter=blob:none --sparse https://gitlab.com/fdroid/fdroiddata.git "$data"
+          git -C "$data" sparse-checkout set --no-cone /config/ /srclibs/flutter.yml
+          rm -rf "$data/.git"
+          mkdir -p "$data"/{metadata,build,tmp,logs,unsigned}
+          cd "$data"
+
+          # Our recipe with this version. Without a release there is no binary
+          # for F-Droid to compare with.
+          sed -e "s/^  - versionName: .*/  - versionName: $VERSION/" \
+            -e "s/^    versionCode: .*/    versionCode: $CODE/" \
+            -e "s/^    commit: .*/    commit: $SHA/" \
+            -e "s/^CurrentVersion: .*/CurrentVersion: $VERSION/" \
+            -e "s/^CurrentVersionCode: .*/CurrentVersionCode: $CODE/" \
+            "$GITHUB_WORKSPACE/src/fdroid/$APP.yml" > "metadata/$APP.yml"
+          if [ "$RELEASE" != true ]; then
+            sed -i '/^Binaries: /d' "metadata/$APP.yml"
+          fi
+          cat "metadata/$APP.yml"
+          fdroid readmeta
+          fdroid lint "$APP"
+
+          for d in "$home_vagrant/.android" "$home_vagrant/.gradle" "$home_vagrant/metadata"; do
+            mkdir -p "$d"
+          done
+          ln -s "$data/tmp" "$home_vagrant/tmp"
+          ln -s "$data/srclibs" "$home_vagrant/srclibs"
+          cp -R "$data/build" "$home_vagrant/build"
+          cp "metadata/$APP.yml" "$home_vagrant/metadata/"
+          chown -R vagrant "$home_vagrant" "$data"
+          export GRADLE_USER_HOME="$home_vagrant/.gradle"
+          fdroid="sudo --preserve-env --user vagrant
+            env PATH=$fdroidserver:$PATH
+            env PYTHONPATH=$fdroidserver:$fdroidserver/examples
+            env PYTHONUNBUFFERED=true
+            env HOME=$home_vagrant
+            fdroid"
+          cd "$home_vagrant"
+          ln -s "$data" "$home_vagrant/fdroiddata"
+          $fdroid fetchsrclibs "$APP:$CODE" --verbose
+          rm "$home_vagrant/fdroiddata"
+          (unset CI; $fdroid build --verbose --test --refresh-scanner --on-server --no-tarball "$APP:$CODE")
+          cp "$data/tmp/${APP}_$CODE.apk" "$GITHUB_WORKSPACE/fdroid.apk"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fdroid
+          path: fdroid.apk
+
+  compare:
+    needs: [reference, fdroid-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          merge-multiple: true
+      - name: Identical apart from the signature
+        run: |
+          pip install --quiet apksigcopier
+          export PATH="$(dirname "$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"):$PATH"
+          sums() {
+            rm -rf x && mkdir x && (cd x && unzip -q "../$1" && find . -type f ! -path './META-INF/*' -exec sha256sum {} + | sort -k2)
+          }
+          if ! apksigcopier compare reference.apk --unsigned fdroid.apk; then
+            echo "::error::F-Droid's build differs from ours; F-Droid will not publish this version"
+            sums reference.apk > reference.sums
+            sums fdroid.apk > fdroid.sums
+            diff reference.sums fdroid.sums || true
+            exit 1
+          fi

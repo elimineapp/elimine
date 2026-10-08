@@ -1,0 +1,20 @@
+<p>Elimine is a private tracker for the substances you take: coffee, medication, supplements, alcohol, nicotine or anything else. Log an intake in two taps, see how often and how much over weeks, months and years, and keep all of it on your phone.</p>
+
+<p><b>What it does</b></p>
+<ul>
+<li>Your own substances, each with a unit, a color, an icon and quick dose buttons. Nothing is built in.</li>
+<li>Logging an intake takes two taps. The dose is optional and the time can be moved into the past.</li>
+<li>Home shows when you last took each substance and a strip of the last 12 weeks.</li>
+<li>Edit or delete any entry; reorder substances by dragging.</li>
+<li>Per-substance dose charts and analytics by week, month and year.</li>
+<li>Archive substances you no longer track, or delete one together with its history.</li>
+<li>Export everything to a JSON file and import it back. The format is documented, so you can convert history from another app.</li>
+<li>Light and dark theme, English and Russian.</li>
+</ul>
+
+<p><b>What it does not do</b></p>
+<ul>
+<li>No network access: the app does not request the Internet permission.</li>
+<li>No accounts, no server, no sync, no ads, no tracking.</li>
+<li>No cloud backup: data leaves the phone only as a file you export yourself.</li>
+</ul>

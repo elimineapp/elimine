@@ -89,4 +89,4 @@ Importing the same file twice therefore adds nothing, and importing an old backu
 
 ## What is not in the file
 
-Intakes deleted with a swipe, when records were created or changed, and when a substance was archived. The file is plain text: keep it somewhere private.
+Intakes deleted with a swipe, when records were created or changed, when a substance was archived, and the app's settings (language, theme, first day of the week). The file is plain text: keep it somewhere private.
