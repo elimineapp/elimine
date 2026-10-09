@@ -87,18 +87,18 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
       color: scheme.onSurfaceVariant,
     );
     final surface = scheme.surface;
-    var (maxY, step) = _axis(
-      bars.map((b) => b.total).fold(0.0, math.max),
+    final plotHeight = widget.height - _bottomTitles;
+    // A bar with a note needs room for its dot: round up from the value at
+    // which the dot would touch the top.
+    final dotRoom = plotHeight / (plotHeight - _dotGap - _dot);
+    final (maxY, step) = chartAxis(
+      bars
+          .map((b) => b.note == null ? b.total : b.total * dotRoom)
+          .fold(0.0, math.max),
       widget.integerValues,
     );
-    // Chart units per pixel, so the dot keeps its size at any scale; bump
-    // the axis by a step when a dot would stick out of the top.
-    double unitsPerPx() => maxY / (widget.height - _bottomTitles);
-    final dotSpan = (_dotGap + _dot) * unitsPerPx();
-    if (bars.any((b) => b.note != null && b.total + dotSpan > maxY)) {
-      maxY += step;
-    }
-    final upp = unitsPerPx();
+    // Chart units per pixel, so the dot keeps its size at any scale.
+    final upp = maxY / plotHeight;
 
     return SizedBox(
       height: widget.height,
@@ -267,25 +267,28 @@ class _ElimineBarChartState extends State<ElimineBarChart> {
   }
 }
 
-/// A "nice" axis top and step: about four gridlines at 1/2/2.5/5 × 10ⁿ.
-(double, double) _axis(double max, bool integer) {
-  if (max <= 0) return (integer ? 4 : 1, integer ? 1 : 0.25);
-  final raw = max / 4;
-  final magnitude = math
-      .pow(10, (math.log(raw) / math.ln10).floor())
-      .toDouble();
-  var step = [
-    1,
-    2,
-    2.5,
-    5,
-    10,
-  ].map((m) => m * magnitude).firstWhere((s) => s >= raw);
-  if (integer) {
-    // Whole steps and at least four of them, so one or two intakes do not
-    // hit the top of the chart.
-    step = math.max(1, step.ceilToDouble());
-    return (math.max(4, (max / step).ceil()) * step, step);
+/// The axis top and its gridline interval: [max] rounded up to two
+/// significant digits (101 → 110, 100 → 100), with one gridline halfway.
+/// Counts stay whole: up to a top of 5 every intake gets a gridline, and
+/// above that a top of at most 100 is even so the halfway value is whole.
+@visibleForTesting
+(double, double) chartAxis(double max, bool integer) {
+  if (max <= 0) return integer ? (1, 1) : (1, 0.5);
+  // log10 can land just below a power of ten (log10(1000) = 2.999…).
+  var magnitude = (math.log(max) / math.ln10).floor();
+  if (math.pow(10, magnitude + 1) <= max) magnitude++;
+  if (math.pow(10, magnitude) > max) magnitude--;
+  var exponent = magnitude - 1;
+  if (integer && exponent < 0) exponent = 0;
+  final unit = math.pow(10, exponent).toDouble();
+  // The slack keeps 0.28 / 0.01 = 28.000…4 from rounding up to 29.
+  var units = (max / unit - 1e-9).ceil();
+  if (integer && exponent == 0) {
+    if (units <= 5) return (units.toDouble(), 1);
+    if (units.isOdd) units++;
   }
-  return ((max / step).ceil() * step, step);
+  final top = double.parse(
+    (units * unit).toStringAsFixed(math.max(0, -exponent)),
+  );
+  return (top, top / 2);
 }
