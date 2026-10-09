@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.3.0](https://github.com/elimineapp/elimine/compare/v0.2.0...v0.3.0) (2026-10-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* the version code restarts at 1, below the 1000 and 2000 of 0.1.0 and 0.2.0, so those installs cannot be updated in place. Export the data, uninstall, install the new version and import the file.
+
+### Features
+
+* choose the interface language and theme in Settings ([e419019](https://github.com/elimineapp/elimine/commit/e419019e7bdc049e546435a49b53c53c57a91e01))
+* endless history on Home and precise time since an intake ([84ae745](https://github.com/elimineapp/elimine/commit/84ae74511cbdd2eaefd1a3f9d14d1ad25701200f))
+* reorder substances on Home by long-press and drag ([f5e2e26](https://github.com/elimineapp/elimine/commit/f5e2e26b8773e555b197b120688237509a3d7bd4))
+* switch to the ink color theme and the night launcher icon ([33f37fb](https://github.com/elimineapp/elimine/commit/33f37fb8274c7a649be48c01d8df51c8762e5efb))
+
+
+### Bug Fixes
+
+* end chart axes at the tallest bar rounded to two digits ([ec29b17](https://github.com/elimineapp/elimine/commit/ec29b17f5c11174b2a3961d8a5259ef18d99a3c5))
+
+
+### Build
+
+* prepare reproducible builds and a store listing for F-Droid ([5572192](https://github.com/elimineapp/elimine/commit/5572192208cf6e7b3647e78d29572e63ae153a96))
+
 ## [0.2.0](https://github.com/elimineapp/elimine/compare/v0.1.0...v0.2.0) (2026-10-05)
 
 
