@@ -85,7 +85,7 @@ jobs:
 
       - name: Version matches the tag
         run: |
-          # release-please writes X.Y.Z+N; N is the Android version code.
+          # release-please writes X.Y.Z+N; N is the build number in the version codes.
           if ! grep -qxE "version: ${VERSION//./\\.}\+[0-9]+" pubspec.yaml; then
             echo "::error::pubspec.yaml does not have version $VERSION with a build number"
             exit 1
@@ -114,7 +114,7 @@ jobs:
             echo "keyPassword=$KEY_PASSWORD"
           } > android/key.properties
 
-      # F-Droid publishes this APK only if its own build of the tag is
+      # F-Droid publishes these APKs only if its own builds of the tag are
       # identical, so the build mirrors F-Droid's build server.
       - name: Build
         run: tool/release_build.sh
@@ -123,30 +123,36 @@ jobs:
         run: |
           apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
           echo "Using $apksigner"
-          "$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk \
-            | tee "$RUNNER_TEMP/certs.txt"
-          # The prefix depends on the build tools ("Signer #1", "V2 Signer", ...);
-          # every signer must carry the release certificate.
-          actual=$(sed -n 's/^.*Signer.*certificate SHA-256 digest: //p' "$RUNNER_TEMP/certs.txt" | sort -u)
           expected=$(tr -d ' :\n' < .github/release-cert.sha256 | tr 'A-F' 'a-f')
-          if [ "$actual" != "$expected" ]; then
-            echo "::error::APK certificate '$actual' does not match .github/release-cert.sha256"
-            exit 1
-          fi
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            "$apksigner" verify --print-certs "build/app/outputs/flutter-apk/app-$abi-release.apk" \
+              | tee "$RUNNER_TEMP/certs.txt"
+            # The prefix depends on the build tools ("Signer #1", "V2 Signer", ...);
+            # every signer must carry the release certificate.
+            actual=$(sed -n 's/^.*Signer.*certificate SHA-256 digest: //p' "$RUNNER_TEMP/certs.txt" | sort -u)
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::$abi APK certificate '$actual' does not match .github/release-cert.sha256"
+              exit 1
+            fi
+          done
 
       - name: Attach to the release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk "elimine-$VERSION.apk"
-          gh release upload "$TAG" "elimine-$VERSION.apk" --clobber
+          files=()
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            cp "build/app/outputs/flutter-apk/app-$abi-release.apk" "elimine-$VERSION-$abi.apk"
+            files+=("elimine-$VERSION-$abi.apk")
+          done
+          gh release upload "$TAG" "${files[@]}" --clobber
 
       - name: Remove the key
         if: always()
         run: rm -rf "$RUNNER_TEMP/release.jks" android/key.properties /home/vagrant/build/com.elimine.elimine
 
-  # F-Droid publishes this version only if its build equals the APK above.
+  # F-Droid publishes this version only if its builds equal the APKs above.
   fdroid-check:
     needs: [target, apk]
     if: ${{ !failure() && !cancelled() && needs.apk.result == 'success' }}

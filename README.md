@@ -40,7 +40,13 @@ A private substance intake tracker for Android. Log an intake in two taps, see h
 
 ## Install
 
-Download `elimine-X.Y.Z.apk` from the [latest release](https://github.com/elimineapp/elimine/releases/latest) and open it on your phone. Android will ask you to allow installing apps from your browser or file manager. Newer releases install over older ones and keep your data.
+Download the APK for your phone from the [latest release](https://github.com/elimineapp/elimine/releases/latest) and open it on your phone. Android will ask you to allow installing apps from your browser or file manager. Newer releases install over older ones and keep your data.
+
+- `elimine-X.Y.Z-arm64-v8a.apk`: almost every phone from the last ten years. Take this one if unsure.
+- `elimine-X.Y.Z-armeabi-v7a.apk`: older 32-bit phones. If the one above shows "App not installed", try this one.
+- `elimine-X.Y.Z-x86_64.apk`: emulators and a few tablets.
+
+Up to 0.3.0 each release had one APK for all phones, `elimine-X.Y.Z.apk`; later releases install over it.
 
 Versions 0.1.0 and 0.2.0 cannot be updated in place to later ones. Export your data in Settings, uninstall, install the new version and import the file.
 
@@ -52,7 +58,7 @@ Every release is signed with the same Elimine key. Its certificate SHA-256 finge
 F6:C0:B3:63:5B:42:98:F3:C8:25:B2:2A:AA:F6:F7:16:FE:9E:46:4C:CF:CF:83:20:27:6C:47:86:22:F2:51:D0
 ```
 
-Check it with `apksigner verify --print-certs elimine-X.Y.Z.apk` (from the Android SDK build tools), or on the phone with an app such as [AppVerifier](https://github.com/soupslurpr/AppVerifier). If the fingerprint differs, do not install the file.
+Check it with `apksigner verify --print-certs elimine-X.Y.Z-arm64-v8a.apk` (from the Android SDK build tools), or on the phone with an app such as [AppVerifier](https://github.com/soupslurpr/AppVerifier). If the fingerprint differs, do not install the file.
 
 ## Build from source
 

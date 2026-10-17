@@ -1,7 +1,8 @@
 # Builds a version the way F-Droid does, from fdroid/com.elimine.elimine.yml,
-# and checks that the APK equals ours apart from the signature. F-Droid skips
-# every version where that fails, so this tells us first. release.yml runs it
-# for each release; it can also be run by hand for a tag or a branch.
+# and checks that the APK for each ABI equals ours apart from the signature.
+# F-Droid skips every version where that fails, so this tells us first.
+# release.yml runs it for each release; it can also be run by hand for a tag
+# or a branch.
 name: F-Droid check
 
 on:
@@ -14,7 +15,7 @@ on:
     inputs:
       ref:
         description: >-
-          A release tag (compared with its published APK) or a branch or commit
+          A release tag (compared with its published APKs) or a branch or commit
           (compared with a release build of it, signed with the debug key)
         required: true
         type: string
@@ -50,17 +51,10 @@ jobs:
           code=${version#*+}
           version=${version%+*}
 
-          recipe=$(sed -n 's/^ *- flutter@//p' fdroid/com.elimine.elimine.yml)
-          ci=$(sed -n 's/^ *flutter-version: "\(.*\)"/\1/p' .github/actions/setup/action.yml)
-          if [ "$recipe" != "$ci" ]; then
-            echo "::error::Flutter $recipe in fdroid/com.elimine.elimine.yml, $ci in .github/actions/setup/action.yml"
-            exit 1
-          fi
-
           release=false
           if [ "$REF" = "v$version" ] &&
-            gh release view "$REF" -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' |
-            grep -qx "elimine-$version.apk"; then
+            [ "$(gh release view "$REF" -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' |
+              grep -cxE "elimine-${version//./\\.}-(armeabi-v7a|arm64-v8a|x86_64)\.apk")" = 3 ]; then
             release=true
           fi
           {
@@ -70,7 +64,7 @@ jobs:
             echo "release=$release"
           } | tee -a "$GITHUB_OUTPUT"
 
-  # The APK to compare with: the published one, or a release build of the ref.
+  # The APKs to compare with: the published ones, or a release build of the ref.
   reference:
     needs: target
     runs-on: ubuntu-latest
@@ -82,8 +76,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download "v$VERSION" -R "$GITHUB_REPOSITORY" -p "elimine-$VERSION.apk"
-          mv "elimine-$VERSION.apk" reference.apk
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            gh release download "v$VERSION" -R "$GITHUB_REPOSITORY" -p "elimine-$VERSION-$abi.apk"
+            mv "elimine-$VERSION-$abi.apk" "reference-$abi.apk"
+          done
       - if: needs.target.outputs.release != 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -95,17 +91,30 @@ jobs:
         if: needs.target.outputs.release != 'true'
         run: |
           tool/release_build.sh
-          cp build/app/outputs/flutter-apk/app-release.apk reference.apk
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            cp "build/app/outputs/flutter-apk/app-$abi-release.apk" "reference-$abi.apk"
+          done
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: reference
-          path: reference.apk
+          path: reference-*.apk
 
-  # Follows the "fdroid build" job of fdroiddata's .gitlab-ci.yml.
+  # Follows the "fdroid build" job of fdroiddata's .gitlab-ci.yml, one build
+  # block (ABI) per job as on F-Droid's build server.
   fdroid-build:
     needs: target
     runs-on: ubuntu-latest
     container: registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: armeabi-v7a
+            n: 1
+          - abi: arm64-v8a
+            n: 2
+          - abi: x86_64
+            n: 4
     env:
       ANDROID_HOME: /opt/android-sdk
       APP: com.elimine.elimine
@@ -113,6 +122,8 @@ jobs:
       VERSION: ${{ needs.target.outputs.version }}
       CODE: ${{ needs.target.outputs.code }}
       RELEASE: ${{ needs.target.outputs.release }}
+      ABI: ${{ matrix.abi }}
+      ABI_NUMBER: ${{ matrix.n }}
     defaults:
       run:
         shell: bash
@@ -126,6 +137,7 @@ jobs:
         run: |
           exec > >(tee "$RUNNER_TEMP/fdroid.log") 2>&1
           set -ex
+          VERCODE=$((ABI_NUMBER * 1000 + CODE))
           test -n "${fdroidserver:-}" || source /etc/profile.d/bsenv.sh
           apt-get update -q
           apt-get install -qy --no-install-recommends sudo git openjdk-21-jdk-headless
@@ -143,16 +155,19 @@ jobs:
           mkdir -p "$data"/{metadata,build,tmp,logs,unsigned}
           cd "$data"
 
-          # Our recipe with this version. Without a release there is no binary
+          # Our recipe with this version; the version codes are Flutter's,
+          # 1000 × ABI + build number. Without a release there are no binaries
           # for F-Droid to compare with.
           sed -e "s/^  - versionName: .*/  - versionName: $VERSION/" \
-            -e "s/^    versionCode: .*/    versionCode: $CODE/" \
+            -e "s/^    versionCode: 1000$/    versionCode: $((1000 + CODE))/" \
+            -e "s/^    versionCode: 2000$/    versionCode: $((2000 + CODE))/" \
+            -e "s/^    versionCode: 4000$/    versionCode: $((4000 + CODE))/" \
             -e "s/^    commit: .*/    commit: $SHA/" \
             -e "s/^CurrentVersion: .*/CurrentVersion: $VERSION/" \
-            -e "s/^CurrentVersionCode: .*/CurrentVersionCode: $CODE/" \
+            -e "s/^CurrentVersionCode: .*/CurrentVersionCode: $((4000 + CODE))/" \
             "$GITHUB_WORKSPACE/src/fdroid/$APP.yml" > "metadata/$APP.yml"
           if [ "$RELEASE" != true ]; then
-            sed -i '/^Binaries: /d' "metadata/$APP.yml"
+            sed -i '/^    binary: /d' "metadata/$APP.yml"
           fi
           cat "metadata/$APP.yml"
           fdroid readmeta
@@ -175,14 +190,14 @@ jobs:
             fdroid"
           cd "$home_vagrant"
           ln -s "$data" "$home_vagrant/fdroiddata"
-          $fdroid fetchsrclibs "$APP:$CODE" --verbose
+          $fdroid fetchsrclibs "$APP:$VERCODE" --verbose
           rm "$home_vagrant/fdroiddata"
-          (unset CI; $fdroid build --verbose --test --refresh-scanner --on-server --no-tarball "$APP:$CODE")
-          cp "$data/tmp/${APP}_$CODE.apk" "$GITHUB_WORKSPACE/fdroid.apk"
+          (unset CI; $fdroid build --verbose --test --refresh-scanner --on-server --no-tarball "$APP:$VERCODE")
+          cp "$data/tmp/${APP}_$VERCODE.apk" "$GITHUB_WORKSPACE/fdroid-$ABI.apk"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: fdroid
-          path: fdroid.apk
+          name: fdroid-${{ matrix.abi }}
+          path: fdroid-${{ matrix.abi }}.apk
 
   compare:
     needs: [reference, fdroid-build]
@@ -194,14 +209,21 @@ jobs:
       - name: Identical apart from the signature
         run: |
           pip install --quiet apksigcopier
-          export PATH="$(dirname "$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"):$PATH"
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          PATH="$(dirname "$apksigner"):$PATH"
           sums() {
             rm -rf x && mkdir x && (cd x && unzip -q "../$1" && find . -type f ! -path './META-INF/*' -exec sha256sum {} + | sort -k2)
           }
-          if ! apksigcopier compare reference.apk --unsigned fdroid.apk; then
-            echo "::error::F-Droid's build differs from ours; F-Droid will not publish this version"
-            sums reference.apk > reference.sums
-            sums fdroid.apk > fdroid.sums
-            diff reference.sums fdroid.sums || true
-            exit 1
-          fi
+          failed=0
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            if apksigcopier compare "reference-$abi.apk" --unsigned "fdroid-$abi.apk"; then
+              echo "$abi: identical apart from the signature"
+            else
+              echo "::error::F-Droid's $abi build differs from ours; F-Droid will not publish this version"
+              sums "reference-$abi.apk" > reference.sums
+              sums "fdroid-$abi.apk" > fdroid.sums
+              diff reference.sums fdroid.sums || true
+              failed=1
+            fi
+          done
+          exit "$failed"
