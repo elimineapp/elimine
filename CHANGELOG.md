@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/elimineapp/elimine/compare/v0.3.0...v0.3.1) (2026-10-17)
+
+
+### Build
+
+* publish one APK per ABI, as F-Droid's Flutter template builds ([6a7fe0a](https://github.com/elimineapp/elimine/commit/6a7fe0a4a1de4d401a137e6b8e42b071e1653b86))
+
 ## [0.3.0](https://github.com/elimineapp/elimine/compare/v0.2.0...v0.3.0) (2026-10-09)
 
 
