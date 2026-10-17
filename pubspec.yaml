@@ -8,7 +8,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # one with every release. Each release APK's Android version code is
 # 1000 × its ABI number (1 armeabi-v7a, 2 arm64-v8a, 4 x86_64) plus the build
 # number, and F-Droid reads both from this line.
-version: 0.3.0+2
+version: 0.3.1+3
 
 environment:
   sdk: ^3.13.4
