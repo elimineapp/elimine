@@ -8,6 +8,8 @@ SourceCode: https://github.com/elimineapp/elimine
 IssueTracker: https://github.com/elimineapp/elimine/issues
 Changelog: https://github.com/elimineapp/elimine/blob/HEAD/CHANGELOG.md
 
+AutoName: Elimine
+
 RepoType: git
 Repo: https://github.com/elimineapp/elimine.git
 
