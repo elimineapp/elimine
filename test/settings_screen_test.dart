@@ -4,6 +4,7 @@ import 'package:elimine/app/providers.dart';
 import 'package:elimine/core/db/database.dart';
 import 'package:elimine/features/backup/backup_files.dart';
 import 'package:elimine/features/backup/backup_format.dart';
+import 'package:elimine/features/lock/app_lock.dart';
 import 'package:elimine/features/settings/settings_screen.dart';
 import 'package:elimine/l10n/app_localizations.dart';
 import 'package:elimine/services/intake_service.dart';
@@ -13,6 +14,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'lock_fakes.dart';
+
 /// Stands in for the system dialogs: [toOpen] is what the user picks (null
 /// cancels), [saveAccepted] whether they confirm saving.
 class FakeBackupFiles implements BackupFiles {
@@ -21,8 +24,12 @@ class FakeBackupFiles implements BackupFiles {
   String? savedName;
   String? savedContent;
 
+  /// Runs while the dialog is open, e.g. to send the app to the background.
+  void Function()? whileOpen;
+
   @override
   Future<bool> save(String fileName, String content) async {
+    whileOpen?.call();
     if (!saveAccepted) return false;
     savedName = fileName;
     savedContent = content;
@@ -37,6 +44,7 @@ void main() {
   final now = DateTime(2026, 10, 4, 14);
   late AppDatabase db;
   late FakeBackupFiles files;
+  late FakeBiometrics biometrics;
 
   setUp(() {
     db = AppDatabase(
@@ -46,6 +54,7 @@ void main() {
       ),
     );
     files = FakeBackupFiles();
+    biometrics = FakeBiometrics();
   });
 
   tearDown(() => db.close());
@@ -59,13 +68,42 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> pumpSettings(WidgetTester tester) async {
+  ProviderContainer container(WidgetTester tester) =>
+      ProviderScope.containerOf(tester.element(find.byType(SettingsScreen)));
+
+  AppLock appLock(WidgetTester tester) =>
+      container(tester).read(appLockProvider.notifier);
+
+  AppLockState lockState(WidgetTester tester) =>
+      container(tester).read(appLockProvider);
+
+  /// [lockPin] turns the app lock on with that PIN before the screen opens,
+  /// as if set earlier; the lock is then unlocked, as Settings is only
+  /// reachable that way.
+  Future<void> pumpSettings(WidgetTester tester, {String? lockPin}) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+    final lock = (await tester.runAsync(() async {
+      final settings = SettingsService(db);
+      if (lockPin != null) {
+        await settings.setLockPin(
+          await fastPinHasher.hash(lockPin),
+          lockPin.length,
+        );
+      }
+      return settings.readLock();
+    }))!;
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           databaseProvider.overrideWithValue(db),
           backupFilesProvider.overrideWithValue(files),
           appVersionProvider.overrideWith((ref) async => '0.1.0'),
+          initialLockProvider.overrideWithValue(lock),
+          pinHasherProvider.overrideWithValue(fastPinHasher),
+          biometricsProvider.overrideWithValue(biometrics),
+          recentsWindowProvider.overrideWithValue(FakeRecentsWindow()),
         ],
         // Follows the chosen language and theme like the app does; the test
         // device is English and light.
@@ -82,7 +120,27 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    if (lockPin != null) {
+      await tester.runAsync(() => appLock(tester).unlockWithPin(lockPin));
+      await tester.pumpAndSettle();
+    }
   }
+
+  Future<void> enter(WidgetTester tester, String digits) async {
+    for (final d in digits.split('')) {
+      await tester.tap(find.byKey(Key('pin-$d')));
+      await tester.pump();
+    }
+    await settle(tester);
+  }
+
+  Future<void> tapNext(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('pin-next')));
+    await settle(tester);
+  }
+
+  bool switchOn(WidgetTester tester, String key) =>
+      tester.widget<SwitchListTile>(find.byKey(Key(key))).value;
 
   Future<int> count(WidgetTester tester) async =>
       (await tester.runAsync(() => db.select(db.intakes).get()))!.length;
@@ -322,5 +380,164 @@ void main() {
     );
     expect(saved, ThemeMode.system);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  group('Security', () {
+    testWidgets('sits between General and Backup with only the switch, off', (
+      tester,
+    ) async {
+      await pumpSettings(tester);
+      final general = tester.getTopLeft(find.text('General')).dy;
+      final security = tester.getTopLeft(find.text('Security')).dy;
+      final backup = tester.getTopLeft(find.text('Backup')).dy;
+      expect(general < security && security < backup, isTrue);
+      expect(switchOn(tester, 'appLock'), isFalse);
+      expect(find.byKey(const Key('biometricUnlock')), findsNothing);
+      expect(find.byKey(const Key('lockAfter')), findsNothing);
+      expect(find.byKey(const Key('changePin')), findsNothing);
+    });
+
+    testWidgets('turning the lock on chooses a PIN and shows its rows', (
+      tester,
+    ) async {
+      await pumpSettings(tester);
+      await tester.tap(find.byKey(const Key('appLock')));
+      await settle(tester);
+      expect(find.text('Choose a PIN'), findsOneWidget);
+      await enter(tester, '2468');
+      await tapNext(tester);
+      await enter(tester, '2468');
+      await tapNext(tester);
+
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      expect(switchOn(tester, 'appLock'), isTrue);
+      expect(lockState(tester).locked, isFalse);
+      expect(switchOn(tester, 'biometricUnlock'), isFalse);
+      expect(find.text('1 minute'), findsOneWidget);
+      expect(find.byKey(const Key('changePin')), findsOneWidget);
+    });
+
+    testWidgets('going back from the PIN screen leaves the lock off', (
+      tester,
+    ) async {
+      await pumpSettings(tester);
+      await tester.tap(find.byKey(const Key('appLock')));
+      await settle(tester);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(switchOn(tester, 'appLock'), isFalse);
+      expect(lockState(tester).enabled, isFalse);
+    });
+
+    testWidgets('without biometrics on the device, no biometric row', (
+      tester,
+    ) async {
+      biometrics.available = false;
+      await pumpSettings(tester, lockPin: '2468');
+      expect(switchOn(tester, 'appLock'), isTrue);
+      expect(find.byKey(const Key('biometricUnlock')), findsNothing);
+      expect(find.byKey(const Key('lockAfter')), findsOneWidget);
+    });
+
+    testWidgets('turning the lock off asks for the PIN', (tester) async {
+      await pumpSettings(tester, lockPin: '2468');
+      await tester.tap(find.byKey(const Key('appLock')));
+      await settle(tester);
+      expect(find.text('Enter your current PIN'), findsOneWidget);
+      await enter(tester, '1111');
+      expect(find.text('Wrong PIN'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(switchOn(tester, 'appLock'), isTrue);
+
+      await tester.tap(find.byKey(const Key('appLock')));
+      await settle(tester);
+      await enter(tester, '2468');
+      expect(switchOn(tester, 'appLock'), isFalse);
+      expect(find.byKey(const Key('lockAfter')), findsNothing);
+      expect(
+        (await tester.runAsync(() => SettingsService(db).readLock()))!.pin,
+        isNull,
+      );
+    });
+
+    testWidgets('changing the PIN asks for the current one first', (
+      tester,
+    ) async {
+      await pumpSettings(tester, lockPin: '2468');
+      await tester.tap(find.byKey(const Key('changePin')));
+      await settle(tester);
+      await enter(tester, '1111');
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(find.text('Choose a PIN'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('changePin')));
+      await settle(tester);
+      await enter(tester, '2468');
+      expect(find.text('Choose a PIN'), findsOneWidget);
+      await enter(tester, '1357');
+      await tapNext(tester);
+      await enter(tester, '1357');
+      await tapNext(tester);
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      final lock = appLock(tester);
+      expect(
+        await tester.runAsync(() => lock.checkPin('1357')),
+        PinCheck.right,
+      );
+      expect(
+        await tester.runAsync(() => lock.checkPin('2468')),
+        PinCheck.wrong,
+      );
+    });
+
+    testWidgets('"Lock after" offers four choices', (tester) async {
+      await pumpSettings(tester, lockPin: '2468');
+      await tester.tap(find.byKey(const Key('lockAfter')));
+      await tester.pumpAndSettle();
+      for (final label in ['Immediately', '5 minutes', '15 minutes']) {
+        expect(find.text(label), findsOneWidget);
+      }
+      await tester.tap(find.text('Immediately'));
+      await settle(tester);
+      expect(find.text('Immediately'), findsOneWidget);
+      expect(lockState(tester).lockAfter, Duration.zero);
+    });
+
+    testWidgets('biometric unlock turns on only after a successful check', (
+      tester,
+    ) async {
+      biometrics.succeed = false;
+      await pumpSettings(tester, lockPin: '2468');
+      await tester.tap(find.byKey(const Key('biometricUnlock')));
+      await settle(tester);
+      expect(switchOn(tester, 'biometricUnlock'), isFalse);
+
+      biometrics.succeed = true;
+      await tester.tap(find.byKey(const Key('biometricUnlock')));
+      await settle(tester);
+      expect(switchOn(tester, 'biometricUnlock'), isTrue);
+      expect(biometrics.prompts, 2);
+    });
+
+    testWidgets('exporting does not lock, even at "Immediately"', (
+      tester,
+    ) async {
+      await pumpSettings(tester, lockPin: '2468');
+      await tester.runAsync(() => appLock(tester).setLockAfter(Duration.zero));
+      files.whileOpen = () {
+        appLock(tester).appHidden();
+        appLock(tester).appShown();
+      };
+      await tester.tap(find.byKey(const Key('export')));
+      await settle(tester);
+      expect(lockState(tester).locked, isFalse);
+      expect(find.text('Data exported'), findsOneWidget);
+
+      // Leaving the app otherwise still locks.
+      appLock(tester).appHidden();
+      expect(lockState(tester).locked, isTrue);
+    });
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/lock/lock_screen.dart';
 import '../l10n/app_localizations.dart';
 import 'providers.dart';
 import 'router.dart';
@@ -22,9 +23,12 @@ class _ElimineAppState extends ConsumerState<ElimineApp> {
     // The home-screen widget writes through its own connection, which Drift
     // streams here cannot see. Re-query everything when the app comes back.
     _lifecycle = AppLifecycleListener(
+      onHide: () => ref.read(appLockProvider.notifier).appHidden(),
+      onShow: () => ref.read(appLockProvider.notifier).appShown(),
       onResume: () {
         final db = ref.read(databaseProvider);
         db.markTablesUpdated(db.allTables);
+        ref.invalidate(biometricsAvailableProvider);
       },
     );
   }
@@ -50,6 +54,11 @@ class _ElimineAppState extends ConsumerState<ElimineApp> {
       theme: ThemeData(colorScheme: inkLight),
       darkTheme: ThemeData(colorScheme: inkDark),
       routerConfig: router,
+      builder: (context, child) => LockLayer(
+        backButtonDispatcher: router.backButtonDispatcher,
+        onErased: () => router.go('/'),
+        child: child!,
+      ),
     );
   }
 }

@@ -78,4 +78,63 @@ void main() {
 
     await tester.pumpWidget(const SizedBox());
   });
+
+  group('app lock settings', () {
+    test('default to an unlocked app', () async {
+      final lock = await SettingsService(db).readLock();
+      expect(lock.pin, isNull);
+      expect(lock.biometric, isFalse);
+      expect(lock.lockAfter, const Duration(minutes: 1));
+      expect(lock.failures, 0);
+      expect(lock.blockedUntil, isNull);
+    });
+
+    test('every key round-trips', () async {
+      final settings = SettingsService(db);
+      final until = DateTime(2026, 10, 23, 20, 15, 30);
+      await settings.setLockPin(r'pbkdf2-sha256$1$AA==$AA==', 6);
+      await settings.setLockBiometric(true);
+      await settings.setLockAfter(Duration.zero);
+      await settings.setLockFailures(7, until);
+      final lock = await settings.readLock();
+      expect(lock.pin, r'pbkdf2-sha256$1$AA==$AA==');
+      expect(lock.pinLength, 6);
+      expect(lock.biometric, isTrue);
+      expect(lock.lockAfter, Duration.zero);
+      expect(lock.failures, 7);
+      expect(lock.blockedUntil, until);
+
+      await settings.setLockAfter(const Duration(minutes: 15));
+      await settings.setLockBiometric(false);
+      await settings.setLockFailures(0, null);
+      final changed = await settings.readLock();
+      expect(changed.lockAfter, const Duration(minutes: 15));
+      expect(changed.biometric, isFalse);
+      expect(changed.failures, 0);
+      expect(changed.blockedUntil, isNull);
+    });
+
+    test('clearing the lock keeps the other preferences', () async {
+      final settings = SettingsService(db);
+      await settings.setLocale(const Locale('ru'));
+      await settings.setThemeMode(ThemeMode.dark);
+      await settings.setWeekStart(DateTime.sunday);
+      await settings.setLockPin(r'pbkdf2-sha256$1$AA==$AA==', 4);
+      await settings.setLockBiometric(true);
+      await settings.setLockAfter(Duration.zero);
+      await settings.setLockFailures(5, DateTime(2026, 10, 23));
+
+      await settings.clearLock();
+
+      final lock = await settings.readLock();
+      expect(lock.pin, isNull);
+      expect(lock.biometric, isFalse);
+      expect(lock.lockAfter, const Duration(minutes: 1));
+      expect(lock.failures, 0);
+      final preferences = await settings.readPreferences();
+      expect(preferences.locale, const Locale('ru'));
+      expect(preferences.themeMode, ThemeMode.dark);
+      expect(await settings.watchWeekStart().first, DateTime.sunday);
+    });
+  });
 }

@@ -119,6 +119,30 @@ void main() {
     expect(await target.select(target.settings).get(), isEmpty);
   });
 
+  test(
+    'the app lock stays out of backups and imports leave it alone',
+    () async {
+      const pin = r'pbkdf2-sha256$60000$c2FsdHNhbHQ=$aGFzaGhhc2g=';
+      await fill(source);
+      await SettingsService(source).setLockPin(pin, 4);
+      await SettingsService(source).setLockBiometric(true);
+      await SettingsService(source).setLockAfter(Duration.zero);
+      final json = await backup(source).export();
+      expect(json, isNot(contains('appLock')));
+      expect(json, isNot(contains('pbkdf2')));
+      expect(json, isNot(contains('aGFzaGhhc2g')));
+
+      const other = r'pbkdf2-sha256$60000$b3RoZXI=$b3RoZXI=';
+      await SettingsService(target).setLockPin(other, 6);
+      await backup(target).apply(await backup(target).plan(decode(json)));
+      final lock = await SettingsService(target).readLock();
+      expect(lock.pin, other);
+      expect(lock.pinLength, 6);
+      expect(lock.biometric, isFalse);
+      expect(lock.lockAfter, const Duration(minutes: 1));
+    },
+  );
+
   test('importing the same file again adds nothing', () async {
     await fill(source);
     final json = await backup(source).export();

@@ -30,6 +30,7 @@ A private substance intake tracker for Android. Log an intake in two taps, see h
 - Per-substance charts and analytics by week, month and year.
 - Archive substances you no longer track, or delete one together with its history.
 - Export everything to a JSON file and import it back ([format](docs/backup-format.md)).
+- Optional app lock with a PIN and fingerprint. A forgotten PIN cannot be recovered: the only way back in is to erase all data, so export a backup first.
 - Light and dark theme, English and Russian, each following the system or chosen in Settings.
 
 ## What it does not do

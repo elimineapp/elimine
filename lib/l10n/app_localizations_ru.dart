@@ -467,4 +467,124 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get securitySection => 'Безопасность';
+
+  @override
+  String get appLock => 'Блокировка приложения';
+
+  @override
+  String get appLockSubtitle => 'Запрашивать PIN-код при входе';
+
+  @override
+  String get biometricUnlock => 'Вход по биометрии';
+
+  @override
+  String get biometricUnlockSubtitle => 'Отпечаток пальца или лицо';
+
+  @override
+  String get lockAfter => 'Блокировать через';
+
+  @override
+  String get lockAfterImmediately => 'Сразу';
+
+  @override
+  String lockAfterMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes минуты',
+      many: '$minutes минут',
+      few: '$minutes минуты',
+      one: '$minutes минуту',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get changePin => 'Сменить PIN-код';
+
+  @override
+  String get enterPin => 'Введите PIN-код';
+
+  @override
+  String get enterCurrentPin => 'Введите текущий PIN-код';
+
+  @override
+  String get choosePin => 'Придумайте PIN-код';
+
+  @override
+  String get choosePinHint => 'От 4 до 8 цифр';
+
+  @override
+  String get confirmPin => 'Повторите PIN-код';
+
+  @override
+  String get pinNext => 'Далее';
+
+  @override
+  String get pinDone => 'Готово';
+
+  @override
+  String get wrongPin => 'Неверный PIN-код';
+
+  @override
+  String get pinsDoNotMatch =>
+      'PIN-коды не совпадают. Придумайте PIN-код заново.';
+
+  @override
+  String pinBlocked(String time) {
+    return 'Слишком много попыток. Повторите через $time';
+  }
+
+  @override
+  String get pinSetupWarning =>
+      'Если вы забудете PIN-код, войти можно будет, только очистив все данные. Сначала сделайте экспорт, чтобы потом их восстановить.';
+
+  @override
+  String pinDigitsEntered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Введено $count цифры',
+      many: 'Введено $count цифр',
+      few: 'Введено $count цифры',
+      one: 'Введена $count цифра',
+      zero: 'Цифры не введены',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deleteDigit => 'Стереть цифру';
+
+  @override
+  String get useBiometrics => 'Войти по биометрии';
+
+  @override
+  String get biometricPromptTitle => 'Разблокировка Elimine';
+
+  @override
+  String get biometricPromptReason => 'Подтвердите, что это вы';
+
+  @override
+  String get biometricPromptCancel => 'Ввести PIN-код';
+
+  @override
+  String get forgotPin => 'Забыли PIN-код?';
+
+  @override
+  String get forgotPinTitle => 'Очистить все данные?';
+
+  @override
+  String forgotPinBody(String phrase) {
+    return 'PIN-код нельзя восстановить: он больше нигде не хранится. Войти можно, только удалив все вещества и записи на этом телефоне. Чтобы вернуть их потом, импортируйте резервную копию, сделанную раньше.\n\nДля подтверждения введите $phrase.';
+  }
+
+  @override
+  String get eraseAll => 'Очистить всё';
+
+  @override
+  String get eraseConfirmPhrase => 'ОЧИСТИТЬ ВСЁ';
 }

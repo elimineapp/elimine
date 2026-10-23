@@ -10,6 +10,10 @@ import '../features/analytics/analytics.dart';
 import '../features/analytics/analytics_queries.dart';
 import '../features/backup/backup_files.dart';
 import '../features/backup/backup_service.dart';
+import '../features/lock/app_lock.dart';
+import '../features/lock/biometrics.dart';
+import '../features/lock/pin_hash.dart';
+import '../features/lock/recents_window.dart';
 import '../services/intake_service.dart';
 import '../services/settings_service.dart';
 import '../services/substance_service.dart';
@@ -63,6 +67,35 @@ final backupServiceProvider = Provider<BackupService>(
 
 final backupFilesProvider = Provider<BackupFiles>(
   (ref) => const SystemBackupFiles(),
+);
+
+/// The app lock as read before the first frame; `main` overrides it, so a
+/// locked app never shows a frame of its content.
+final initialLockProvider = Provider<LockSettings>(
+  (ref) => (
+    pin: null,
+    pinLength: 0,
+    biometric: false,
+    lockAfter: SettingsService.defaultLockAfter,
+    failures: 0,
+    blockedUntil: null,
+  ),
+);
+
+final appLockProvider = NotifierProvider<AppLock, AppLockState>(AppLock.new);
+
+final pinHasherProvider = Provider<PinHasher>((ref) => const PinHasher());
+
+final biometricsProvider = Provider<Biometrics>((ref) => LocalAuthBiometrics());
+
+/// Whether biometric unlock can be offered; the app re-checks on resume,
+/// since fingerprints can be enrolled or removed meanwhile.
+final biometricsAvailableProvider = FutureProvider<bool>(
+  (ref) => ref.watch(biometricsProvider).isAvailable(),
+);
+
+final recentsWindowProvider = Provider<RecentsWindow>(
+  (ref) => const PlatformRecentsWindow(),
 );
 
 /// Version name of the installed build, e.g. `0.1.0`.

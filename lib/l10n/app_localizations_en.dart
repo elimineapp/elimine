@@ -452,4 +452,119 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get securitySection => 'Security';
+
+  @override
+  String get appLock => 'App lock';
+
+  @override
+  String get appLockSubtitle => 'Ask for a PIN to open the app';
+
+  @override
+  String get biometricUnlock => 'Biometric unlock';
+
+  @override
+  String get biometricUnlockSubtitle => 'Fingerprint or face';
+
+  @override
+  String get lockAfter => 'Lock after';
+
+  @override
+  String get lockAfterImmediately => 'Immediately';
+
+  @override
+  String lockAfterMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '$minutes minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get changePin => 'Change PIN';
+
+  @override
+  String get enterPin => 'Enter PIN';
+
+  @override
+  String get enterCurrentPin => 'Enter your current PIN';
+
+  @override
+  String get choosePin => 'Choose a PIN';
+
+  @override
+  String get choosePinHint => '4 to 8 digits';
+
+  @override
+  String get confirmPin => 'Confirm the PIN';
+
+  @override
+  String get pinNext => 'Next';
+
+  @override
+  String get pinDone => 'Done';
+
+  @override
+  String get wrongPin => 'Wrong PIN';
+
+  @override
+  String get pinsDoNotMatch => 'The PINs do not match. Choose a PIN again.';
+
+  @override
+  String pinBlocked(String time) {
+    return 'Too many attempts. Try again in $time';
+  }
+
+  @override
+  String get pinSetupWarning =>
+      'If you forget the PIN, the only way back in is to erase all data. Export a backup first, so you can restore it.';
+
+  @override
+  String pinDigitsEntered(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count digits entered',
+      one: '$count digit entered',
+      zero: 'No digits entered',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deleteDigit => 'Delete digit';
+
+  @override
+  String get useBiometrics => 'Use biometrics';
+
+  @override
+  String get biometricPromptTitle => 'Unlock Elimine';
+
+  @override
+  String get biometricPromptReason => 'Confirm it\'s you';
+
+  @override
+  String get biometricPromptCancel => 'Use PIN';
+
+  @override
+  String get forgotPin => 'Forgot PIN?';
+
+  @override
+  String get forgotPinTitle => 'Erase all data?';
+
+  @override
+  String forgotPinBody(String phrase) {
+    return 'The PIN can\'t be recovered: it isn\'t stored anywhere else. The only way back in is to erase all substances and intakes on this phone. To get them back afterwards, import a backup you exported earlier.\n\nTo confirm, type $phrase.';
+  }
+
+  @override
+  String get eraseAll => 'Erase all';
+
+  @override
+  String get eraseConfirmPhrase => 'ERASE ALL';
 }

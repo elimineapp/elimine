@@ -7,13 +7,17 @@ import '../../l10n/app_localizations.dart';
 import '../analytics/labels.dart';
 import '../backup/backup_format.dart';
 import '../backup/backup_service.dart';
+import '../lock/app_lock.dart';
+import '../lock/pin_entry.dart';
+import '../lock/pin_screens.dart';
 
 /// Each interface language by its own name, so it reads the same whatever
 /// language the interface is in.
 const _languageNames = {'en': 'English', 'ru': 'Русский'};
 
 /// App settings: the language, the theme, the first day of the week, the
-/// backup (export to a file and import from one) and the installed version.
+/// app lock, the backup (export to a file and import from one) and the
+/// installed version.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key, this.clock = DateTime.now});
 
@@ -42,9 +46,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final json = await _run(ref.read(backupServiceProvider).export);
     final date = DateFormat('yyyy-MM-dd').format(widget.clock());
+    // The system "Save as" dialog is not leaving the app.
     final saved = await ref
-        .read(backupFilesProvider)
-        .save('elimine-$date.json', json);
+        .read(appLockProvider.notifier)
+        .whileExternal(
+          () => ref.read(backupFilesProvider).save('elimine-$date.json', json),
+        );
     if (saved) messenger.showSnackBar(SnackBar(content: Text(l.exportDone)));
   }
 
@@ -52,7 +59,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final l = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final service = ref.read(backupServiceProvider);
-    final text = await ref.read(backupFilesProvider).open();
+    final text = await ref
+        .read(appLockProvider.notifier)
+        .whileExternal(ref.read(backupFilesProvider).open);
     if (text == null || !mounted) return;
 
     final ImportPlan plan;
@@ -181,6 +190,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  Future<void> _toggleLock(bool on) async {
+    final lock = ref.read(appLockProvider.notifier);
+    if (on) {
+      final pin = await choosePin(context, warn: true);
+      if (pin != null) await lock.setPin(pin);
+    } else if (await verifyPin(context)) {
+      await lock.disable();
+    }
+  }
+
+  Future<void> _toggleBiometrics(bool on) async {
+    final lock = ref.read(appLockProvider.notifier);
+    if (on) {
+      await lock.enableBiometrics(
+        biometricPromptText(AppLocalizations.of(context)),
+      );
+    } else {
+      await lock.disableBiometrics();
+    }
+  }
+
+  Future<void> _changePin() async {
+    if (!await verifyPin(context) || !mounted) return;
+    final pin = await choosePin(context, warn: false);
+    if (pin != null) await ref.read(appLockProvider.notifier).setPin(pin);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -191,6 +227,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final locale = localeValue.hasValue ? localeValue.value : initial.locale;
     final themeMode = ref.watch(themeModeProvider).value ?? initial.themeMode;
     final weekStart = ref.watch(weekStartProvider).value ?? DateTime.monday;
+    final lock = ref.watch(appLockProvider);
+    final biometricsAvailable =
+        ref.watch(biometricsAvailableProvider).value ?? false;
+    String lockAfterLabel(Duration after) => after == Duration.zero
+        ? l.lockAfterImmediately
+        : l.lockAfterMinutes(after.inMinutes);
     String languageLabel(Locale? locale) => locale == null
         ? l.languageSystem
         : _languageNames[locale.languageCode]!;
@@ -263,6 +305,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               save: settings.setWeekStart,
             ),
           ),
+          section(l.securitySection),
+          SwitchListTile(
+            key: const Key('appLock'),
+            secondary: const Icon(Icons.lock_outline),
+            title: Text(l.appLock),
+            subtitle: Text(l.appLockSubtitle),
+            value: lock.enabled,
+            onChanged: _toggleLock,
+          ),
+          if (lock.enabled) ...[
+            if (biometricsAvailable)
+              SwitchListTile(
+                key: const Key('biometricUnlock'),
+                secondary: const Icon(Icons.fingerprint),
+                title: Text(l.biometricUnlock),
+                subtitle: Text(l.biometricUnlockSubtitle),
+                value: lock.biometric,
+                onChanged: _toggleBiometrics,
+              ),
+            ListTile(
+              key: const Key('lockAfter'),
+              leading: const Icon(Icons.timer_outlined),
+              title: Text(l.lockAfter),
+              subtitle: Text(lockAfterLabel(lock.lockAfter)),
+              onTap: () => _choose(
+                title: l.lockAfter,
+                key: 'lockAfter',
+                current: lock.lockAfter,
+                options: lockAfterOptions,
+                labels: lockAfterLabel,
+                save: ref.read(appLockProvider.notifier).setLockAfter,
+              ),
+            ),
+            ListTile(
+              key: const Key('changePin'),
+              leading: const Icon(Icons.pin_outlined),
+              title: Text(l.changePin),
+              onTap: _changePin,
+            ),
+          ],
           section(l.backupSection),
           ListTile(
             key: const Key('export'),

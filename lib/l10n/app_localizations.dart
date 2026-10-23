@@ -757,6 +757,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{{count} intake} other{{count} intakes}}'**
   String tooltipIntakes(int count);
+
+  /// No description provided for @securitySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get securitySection;
+
+  /// No description provided for @appLock.
+  ///
+  /// In en, this message translates to:
+  /// **'App lock'**
+  String get appLock;
+
+  /// No description provided for @appLockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for a PIN to open the app'**
+  String get appLockSubtitle;
+
+  /// No description provided for @biometricUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric unlock'**
+  String get biometricUnlock;
+
+  /// No description provided for @biometricUnlockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint or face'**
+  String get biometricUnlockSubtitle;
+
+  /// No description provided for @lockAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock after'**
+  String get lockAfter;
+
+  /// No description provided for @lockAfterImmediately.
+  ///
+  /// In en, this message translates to:
+  /// **'Immediately'**
+  String get lockAfterImmediately;
+
+  /// No description provided for @lockAfterMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, one{{minutes} minute} other{{minutes} minutes}}'**
+  String lockAfterMinutes(int minutes);
+
+  /// No description provided for @changePin.
+  ///
+  /// In en, this message translates to:
+  /// **'Change PIN'**
+  String get changePin;
+
+  /// No description provided for @enterPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter PIN'**
+  String get enterPin;
+
+  /// No description provided for @enterCurrentPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current PIN'**
+  String get enterCurrentPin;
+
+  /// No description provided for @choosePin.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a PIN'**
+  String get choosePin;
+
+  /// No description provided for @choosePinHint.
+  ///
+  /// In en, this message translates to:
+  /// **'4 to 8 digits'**
+  String get choosePinHint;
+
+  /// No description provided for @confirmPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the PIN'**
+  String get confirmPin;
+
+  /// No description provided for @pinNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get pinNext;
+
+  /// No description provided for @pinDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get pinDone;
+
+  /// No description provided for @wrongPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong PIN'**
+  String get wrongPin;
+
+  /// No description provided for @pinsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The PINs do not match. Choose a PIN again.'**
+  String get pinsDoNotMatch;
+
+  /// No description provided for @pinBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Try again in {time}'**
+  String pinBlocked(String time);
+
+  /// No description provided for @pinSetupWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'If you forget the PIN, the only way back in is to erase all data. Export a backup first, so you can restore it.'**
+  String get pinSetupWarning;
+
+  /// No description provided for @pinDigitsEntered.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No digits entered} one{{count} digit entered} other{{count} digits entered}}'**
+  String pinDigitsEntered(int count);
+
+  /// No description provided for @deleteDigit.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete digit'**
+  String get deleteDigit;
+
+  /// No description provided for @useBiometrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Use biometrics'**
+  String get useBiometrics;
+
+  /// No description provided for @biometricPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Elimine'**
+  String get biometricPromptTitle;
+
+  /// No description provided for @biometricPromptReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm it\'s you'**
+  String get biometricPromptReason;
+
+  /// No description provided for @biometricPromptCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Use PIN'**
+  String get biometricPromptCancel;
+
+  /// No description provided for @forgotPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot PIN?'**
+  String get forgotPin;
+
+  /// No description provided for @forgotPinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Erase all data?'**
+  String get forgotPinTitle;
+
+  /// No description provided for @forgotPinBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The PIN can\'t be recovered: it isn\'t stored anywhere else. The only way back in is to erase all substances and intakes on this phone. To get them back afterwards, import a backup you exported earlier.\n\nTo confirm, type {phrase}.'**
+  String forgotPinBody(String phrase);
+
+  /// No description provided for @eraseAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Erase all'**
+  String get eraseAll;
+
+  /// No description provided for @eraseConfirmPhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'ERASE ALL'**
+  String get eraseConfirmPhrase;
 }
 
 class _AppLocalizationsDelegate

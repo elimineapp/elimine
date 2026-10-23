@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show StringExpressionOperators;
 import 'package:flutter/material.dart' show Locale, ThemeMode;
 
 import '../core/db/database.dart';
@@ -6,6 +7,16 @@ import '../l10n/app_localizations.dart';
 /// The interface language and theme the user chose; a null [locale] and
 /// [ThemeMode.system] follow the device.
 typedef Preferences = ({Locale? locale, ThemeMode themeMode});
+
+/// The stored app lock: on exactly when [pin] (an encoded hash) is set.
+typedef LockSettings = ({
+  String? pin,
+  int pinLength,
+  bool biometric,
+  Duration lockAfter,
+  int failures,
+  DateTime? blockedUntil,
+});
 
 /// Device preferences stored in the `settings` table.
 class SettingsService {
@@ -17,6 +28,15 @@ class SettingsService {
   static const _sheetExpanded = 'sheetExpanded';
   static const _language = 'language';
   static const _themeMode = 'themeMode';
+  static const _lockPrefix = 'appLock.';
+  static const _lockPin = '${_lockPrefix}pin';
+  static const _lockPinLength = '${_lockPrefix}pinLength';
+  static const _lockBiometric = '${_lockPrefix}biometric';
+  static const _lockAfter = '${_lockPrefix}after';
+  static const _lockFailures = '${_lockPrefix}failures';
+  static const _lockBlockedUntil = '${_lockPrefix}blockedUntil';
+
+  static const defaultLockAfter = Duration(minutes: 1);
 
   /// The first day of the week as a [DateTime.weekday]: Monday unless the
   /// user chose Sunday.
@@ -77,6 +97,52 @@ class SettingsService {
       themeMode: _theme(value(_themeMode)),
     );
   }
+
+  /// Everything about the app lock at once, for the first frame and for the
+  /// lock itself.
+  Future<LockSettings> readLock() async {
+    final rows = await (db.select(
+      db.settings,
+    )..where((s) => s.key.like('$_lockPrefix%'))).get();
+    final values = {for (final r in rows) r.key: r.value};
+    final after = int.tryParse(values[_lockAfter] ?? '');
+    final blockedUntil = values[_lockBlockedUntil];
+    return (
+      pin: values[_lockPin],
+      pinLength: int.tryParse(values[_lockPinLength] ?? '') ?? 0,
+      biometric: values[_lockBiometric] == 'true',
+      lockAfter: after == null ? defaultLockAfter : Duration(seconds: after),
+      failures: int.tryParse(values[_lockFailures] ?? '') ?? 0,
+      blockedUntil: blockedUntil == null
+          ? null
+          : DateTime.tryParse(blockedUntil)?.toLocal(),
+    );
+  }
+
+  /// Turns the lock on, or replaces its PIN, with an encoded hash.
+  Future<void> setLockPin(String encoded, int length) =>
+      db.transaction(() async {
+        await _set(_lockPin, encoded);
+        await _set(_lockPinLength, '$length');
+      });
+
+  Future<void> setLockBiometric(bool on) =>
+      _set(_lockBiometric, on ? 'true' : null);
+
+  Future<void> setLockAfter(Duration after) =>
+      _set(_lockAfter, after == defaultLockAfter ? null : '${after.inSeconds}');
+
+  /// Wrong PINs in a row and until when input is refused; 0 and null clear
+  /// them.
+  Future<void> setLockFailures(int failures, DateTime? blockedUntil) =>
+      db.transaction(() async {
+        await _set(_lockFailures, failures == 0 ? null : '$failures');
+        await _set(_lockBlockedUntil, blockedUntil?.toUtc().toIso8601String());
+      });
+
+  /// Turns the lock off and forgets everything about it.
+  Future<void> clearLock() =>
+      (db.delete(db.settings)..where((s) => s.key.like('$_lockPrefix%'))).go();
 
   static Locale? _locale(String? code) => AppLocalizations.supportedLocales
       .where((l) => l.languageCode == code)

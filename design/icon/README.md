@@ -7,7 +7,7 @@ Two leaves, light and blue, on ink. The ink is also the accent of the app's colo
 | `source/icon.svg` | Master artwork, 1024 px square |
 | `source/icon-rounded-preview.svg` | Preview with rounded corners |
 | `source/gen.py` | Generates every output below from the shapes and colors it defines |
-| `android/play-store-512.png` | Play Store listing |
+| `android/play-store-512.png` | Play Store listing; copied to `assets/app_icon.png` for the lock screen |
 | `ios/AppIcon.appiconset/` | iOS app icon, kept for a future iOS build |
 
 The Android launcher resources live in `android/app/src/main/res/`:
