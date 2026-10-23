@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/elimineapp/elimine/compare/v0.3.1...v0.4.0) (2026-10-23)
+
+
+### Features
+
+* lock the app with a PIN and fingerprint ([21c2335](https://github.com/elimineapp/elimine/commit/21c2335a5f4d9af96a3a258af3d174f4f5b4a088))
+
 ## [0.3.1](https://github.com/elimineapp/elimine/compare/v0.3.0...v0.3.1) (2026-10-17)
 
 
