@@ -1,0 +1,38 @@
+# Monthly version updates, one grouped pull request per ecosystem; see
+# "Dependencies" in CONTRIBUTING.md. The prefixes keep the commits out of
+# CHANGELOG.md and from cutting a release on their own. Flutter, Gradle and
+# the vendored SQLite are updated by hand.
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/setup
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: ci
+      include: scope
+
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: monthly
+    # Major versions come with breaking changes and are taken by hand, with
+    # the Flutter upgrade.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
+    groups:
+      pub:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: build
+      include: scope

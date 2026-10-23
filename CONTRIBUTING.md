@@ -40,6 +40,17 @@ F-Droid builds each release tag itself and publishes our APKs only if its builds
 
 The release key is never committed. Locally, release builds use it only when `android/key.properties` points at it; otherwise they are signed with the debug key.
 
+## Dependencies
+
+Dependabot (`.github/dependabot.yml`) opens one pull request a month for GitHub Actions, as `ci(deps): …`, and one for the minor and patch updates of the Dart packages, as `build(deps): …`. Neither type appears in `CHANGELOG.md` or cuts a release, so the updates ship with the next `feat` or `fix`. When an update fixes something users notice, such as a bug or a vulnerability, rename the squash commit to `fix(deps): …` on merge so that it is released and listed.
+
+A Dart package pull request can fail CI and need finishing on its branch:
+
+- an update of `drift_dev` or `build_runner` changes the generated code: run `task gen` and commit the result;
+- an update of `package:sqlite3` needs the vendored SQLite updated too, see `third_party/sqlite/README.md`.
+
+Major versions, Flutter, the Android Gradle Plugin, Kotlin and Gradle are updated by hand, together, since their versions have to match: bump Flutter in `.github/actions/setup/action.yml`, run `flutter pub upgrade --major-versions`, fix what breaks, and run `task check`. If the new Flutter uses another NDK (`flutter.ndkVersion`), change `ndk:` in the F-Droid recipe here and in fdroiddata. Before merging, run the F-Droid check workflow on the branch so that a build that is no longer reproducible shows up before a release.
+
 ## Screenshots
 
 The store listing (`fastlane/metadata/android/en-US/images/phoneScreenshots/`, light theme) and the README (also `docs/screenshots/dark/`) use screenshots of demo data, taken on an emulator. Retake both sets when a shown screen changes.
