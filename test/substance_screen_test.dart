@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show DatabaseConnection;
+import 'package:drift/drift.dart' show DatabaseConnection, Value;
 import 'package:drift/native.dart';
 import 'package:elimine/app/providers.dart';
 import 'package:elimine/core/db/database.dart';
@@ -287,6 +287,33 @@ void main() {
       await tester.tap(find.byKey(const Key('saveIntake')));
       await tester.pumpAndSettle();
     }
+
+    testWidgets('the date picker opens on an intake dated after today', (
+      tester,
+    ) async {
+      // Logged an hour ago where it was 11 hours later than here, as
+      // before a flight west over the date line: its date is tomorrow.
+      final at = now.subtract(const Duration(hours: 1));
+      await tester.runAsync(
+        () => db
+            .into(db.intakes)
+            .insert(
+              IntakesCompanion.insert(
+                substanceId: id,
+                amount: const Value(100),
+                takenAt: at,
+                tzOffsetMin: at.timeZoneOffset.inMinutes + 11 * 60,
+              ),
+            ),
+      );
+      await openSheet(tester);
+      await tester.tap(inSheet(find.byKey(const Key('timeRow'))));
+      await tester.pumpAndSettle();
+      expect(find.byType(DatePickerDialog), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await finish(tester);
+    });
 
     testWidgets('shows the intake time and dose', (tester) async {
       await logAt(tester, DateTime(2026, 9, 28, 9, 10), 100);

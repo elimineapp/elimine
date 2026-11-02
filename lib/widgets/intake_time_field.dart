@@ -42,7 +42,9 @@ class IntakeTimeField extends StatelessWidget {
     final base = value ?? now;
     final date = await showDatePicker(
       context: context,
-      initialDate: base,
+      // An intake logged in a zone ahead of this one can be dated after
+      // today here, past the last date the picker allows.
+      initialDate: _clamp(base),
       firstDate: DateTime(now.year - 10),
       lastDate: now,
     );
