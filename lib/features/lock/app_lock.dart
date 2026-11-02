@@ -74,9 +74,19 @@ class AppLock extends Notifier<AppLockState> {
   static const firstWait = Duration(seconds: 30);
   static const longestWait = Duration(hours: 1);
 
+  /// How long one of the app's own system dialogs may keep it hidden without
+  /// counting as leaving it, when "Lock after" is shorter. Android does not
+  /// tell a user still in the dialog from one who went home from it, so only
+  /// the time can bound how long the app stays open behind it.
+  static const externalLimit = Duration(minutes: 5);
+
   String? _pin;
   DateTime? _hiddenAt;
   int _external = 0;
+
+  /// When one of the app's own system dialogs hid the app; kept until the
+  /// app is shown again, whether the dialog's result arrived before or not.
+  DateTime? _externalHiddenAt;
 
   SettingsService get _settings => ref.read(settingsServiceProvider);
   DateTime _now() => ref.read(clockProvider)();
@@ -111,7 +121,11 @@ class AppLock extends Notifier<AppLockState> {
 
   /// The app stopped being visible.
   void appHidden() {
-    if (!state.enabled || state.locked || _external > 0) return;
+    if (!state.enabled || state.locked) return;
+    if (_external > 0) {
+      _externalHiddenAt ??= _now();
+      return;
+    }
     if (state.lockAfter == Duration.zero) {
       // Lock before leaving, so not even a frame of content is left behind.
       state = state.copyWith(locked: true);
@@ -123,16 +137,23 @@ class AppLock extends Notifier<AppLockState> {
   /// The app is visible again.
   void appShown() {
     final hiddenAt = _hiddenAt;
+    final externalHiddenAt = _externalHiddenAt;
     _hiddenAt = null;
-    if (hiddenAt == null || !state.enabled || state.locked) return;
-    if (_now().difference(hiddenAt) >= state.lockAfter) {
-      state = state.copyWith(locked: true);
-    }
+    _externalHiddenAt = null;
+    if (!state.enabled || state.locked) return;
+    final lockAfter = state.lockAfter;
+    final away = hiddenAt != null && _now().difference(hiddenAt) >= lockAfter;
+    final externalAway =
+        externalHiddenAt != null &&
+        _now().difference(externalHiddenAt) >=
+            (lockAfter > externalLimit ? lockAfter : externalLimit);
+    if (away || externalAway) state = state.copyWith(locked: true);
   }
 
   /// Runs [work], which opens a system dialog of the app's own, such as
   /// saving a backup or the biometric prompt, without leaving the app
-  /// counting as leaving it.
+  /// counting as leaving it, unless it lasts [externalLimit] or "Lock after",
+  /// whichever is longer.
   Future<T> whileExternal<T>(Future<T> Function() work) async {
     _external++;
     try {

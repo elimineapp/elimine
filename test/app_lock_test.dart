@@ -131,6 +131,49 @@ void main() {
       expect(container.read(appLockProvider).locked, isTrue);
     });
 
+    test('a system dialog left for longer than the limit locks', () async {
+      final (container, lock) = await withPin(after: Duration.zero);
+      await lock.whileExternal(() async {
+        lock.appHidden();
+        now = now.add(AppLock.externalLimit);
+        lock.appShown();
+      });
+      expect(container.read(appLockProvider).locked, isTrue);
+    });
+
+    test(
+      'the limit holds when the dialog returns before the app is shown',
+      () async {
+        final (container, lock) = await withPin(after: Duration.zero);
+        await lock.whileExternal(() async {
+          lock.appHidden();
+          now = now.add(const Duration(hours: 1));
+        });
+        expect(container.read(appLockProvider).locked, isFalse);
+        lock.appShown();
+        expect(container.read(appLockProvider).locked, isTrue);
+      },
+    );
+
+    test('a "Lock after" longer than the limit applies to dialogs', () async {
+      final (container, lock) = await withPin(
+        after: const Duration(minutes: 15),
+      );
+      await lock.whileExternal(() async {
+        lock.appHidden();
+        now = now.add(const Duration(minutes: 10));
+        lock.appShown();
+      });
+      expect(container.read(appLockProvider).locked, isFalse);
+
+      await lock.whileExternal(() async {
+        lock.appHidden();
+        now = now.add(const Duration(minutes: 16));
+        lock.appShown();
+      });
+      expect(container.read(appLockProvider).locked, isTrue);
+    });
+
     test('nothing happens while the lock is off', () async {
       final container = await start();
       final lock = container.read(appLockProvider.notifier);

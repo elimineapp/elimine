@@ -113,7 +113,7 @@ While the app is locked, it SHALL show only the lock screen: the app icon, "Ente
 - **THEN** the lock screen shows only the PIN keypad and the PIN still unlocks the app
 
 ### Requirement: When the app locks
-While the lock is on, the app SHALL be locked on every cold start. After the app leaves the foreground, it SHALL lock when it comes back if it spent at least the "Lock after" time in the background. "Lock after" SHALL offer "Immediately", "1 minute" (default), "5 minutes" and "15 minutes". System dialogs the app opens itself SHALL NOT count as leaving the foreground.
+While the lock is on, the app SHALL be locked on every cold start. After the app leaves the foreground, it SHALL lock when it comes back if it spent at least the "Lock after" time in the background. "Lock after" SHALL offer "Immediately", "1 minute" (default), "5 minutes" and "15 minutes". Time in a system dialog the app opens itself SHALL NOT count as leaving the foreground unless it lasts at least the "Lock after" time or 5 minutes, whichever is longer; the app SHALL then lock when the dialog closes.
 
 #### Scenario: Cold start
 - **WHEN** the lock is on and the app starts after being closed
@@ -138,6 +138,14 @@ While the lock is on, the app SHALL be locked on every cold start. After the app
 #### Scenario: Exporting a backup
 - **WHEN** "Lock after" is "Immediately" and the user taps "Export" and spends 3 minutes in the system "Save as" dialog
 - **THEN** the app is not locked when the dialog closes, and the export snackbar is shown
+
+#### Scenario: Leaving from a system dialog
+- **WHEN** "Lock after" is "Immediately" and the user taps "Export", goes home from the system "Save as" dialog and comes back to it after an hour
+- **THEN** the lock screen is shown when the dialog closes
+
+#### Scenario: Long dialog with a long "Lock after"
+- **WHEN** "Lock after" is "15 minutes" and the user spends 10 minutes in the system "Save as" dialog
+- **THEN** the app is not locked when the dialog closes
 
 ### Requirement: Wrong PIN throttling
 After 5 wrong PINs in a row, the lock screen SHALL refuse input for 30 seconds, showing the time left, and each further wrong PIN SHALL double the wait, up to 1 hour. The count SHALL be kept across restarts and reset by a successful unlock. The same SHALL apply wherever the app asks for the current PIN.
