@@ -96,7 +96,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final limit = ref.watch(historyLimitProvider);
     final archived = ref.watch(archivedSubstancesProvider).value ?? const [];
     final marks = ref.watch(weekMarksProvider);
-    final today = DateFormat.MMMMEEEEd(l.localeName).format(DateTime.now());
+    final today = DateFormat.MMMMEEEEd(l.localeName)
+        .format(ref.watch(todayProvider));
 
     ref.listen(homeScrollToTopProvider, (_, _) => _toTop());
 

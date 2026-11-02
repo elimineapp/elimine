@@ -136,6 +136,12 @@ final minuteTickProvider = StreamProvider<DateTime>((ref) {
   return ticks.stream;
 });
 
+/// Today's date, renewed at midnight, for what is shown by the calendar day.
+final todayProvider = Provider<DateTime>((ref) {
+  final now = ref.watch(minuteTickProvider).value ?? ref.watch(clockProvider)();
+  return DateTime(now.year, now.month, now.day);
+});
+
 final substancesProvider = StreamProvider<List<SubstanceWithLast>>(
   (ref) => ref.watch(databaseProvider).watchSubstancesWithLast(),
 );
@@ -214,7 +220,7 @@ final firstIntakeDayProvider = StreamProvider.family<DateTime?, String?>(
 /// substances have no intakes in that time.
 final weekMarksProvider = Provider<Map<String, List<int>>>((ref) {
   final firstWeekday = ref.watch(weekStartProvider).value ?? DateTime.monday;
-  final today = DateTime.now();
+  final today = ref.watch(todayProvider);
   final start = markedWeeksStart(today, firstWeekday: firstWeekday);
   // Two days of margin for intakes logged in other time zones, as in
   // AnalyticsPeriod.querySince; weekMarks trims by the local day.

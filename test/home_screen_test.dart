@@ -186,6 +186,48 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('the date and the week marks move on at midnight', (
+    tester,
+  ) async {
+    // Sunday night; weeks start on Monday.
+    var now = DateTime(2026, 10, 4, 23, 59);
+    await tester.runAsync(() async {
+      final id = await SubstanceService(db).create((
+        name: 'Coffee',
+        unit: 'mg',
+        color: 'orange',
+        icon: 'coffee',
+        doses: const [250],
+      ));
+      await IntakeService(db)
+          .log(substanceId: id, amount: 250, takenAt: DateTime(2026, 10, 4, 9));
+    });
+
+    await pumpHome(tester, clock: () => now);
+    List<Color?> marks() => tester
+        .widgetList<Container>(
+          find.descendant(
+            of: find.byKey(const Key('weekStrip')),
+            matching: find.byType(Container),
+          ),
+        )
+        .map((c) => (c.decoration! as BoxDecoration).color)
+        .toList();
+    expect(find.text('Sunday, October 4'), findsOneWidget);
+    final empty = marks().first;
+    expect(marks().last, isNot(empty));
+
+    now = DateTime(2026, 10, 5);
+    await tester.pump(const Duration(minutes: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Monday, October 5'), findsOneWidget);
+    // Last week's intake is now one mark back, and this week has none.
+    expect(marks()[10], isNot(empty));
+    expect(marks().last, empty);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('marks get stronger with more intakes in a week', (tester) async {
     await tester.runAsync(() async {
       final id = await SubstanceService(db).create((
