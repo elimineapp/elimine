@@ -1969,27 +1969,27 @@ class $$SubstancesTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (dosesRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       Substance,
                       $SubstancesTable,
-                      Dose
+                      Dose,
+                      $DosesTable
                     >(
                       currentTable: table,
                       referencedTable: $$SubstancesTableReferences
                           ._dosesRefsTable(db),
                       managerFromTypedResult: (p0) =>
                           $$SubstancesTableReferences(db, table, p0).dosesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.substanceId == item.id,
-                          ),
+                      currentColumn: 'id',
+                      referencedColumn: 'substance_id',
                       typedResults: items,
                     ),
                   if (intakesRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       Substance,
                       $SubstancesTable,
-                      Intake
+                      Intake,
+                      $IntakesTable
                     >(
                       currentTable: table,
                       referencedTable: $$SubstancesTableReferences
@@ -2000,10 +2000,8 @@ class $$SubstancesTableTableManager
                             table,
                             p0,
                           ).intakesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.substanceId == item.id,
-                          ),
+                      currentColumn: 'id',
+                      referencedColumn: 'substance_id',
                       typedResults: items,
                     ),
                 ];
