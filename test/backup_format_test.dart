@@ -68,6 +68,29 @@ void main() {
     );
   });
 
+  test('round trip keeps whole numbers too large for an integer', () {
+    final [s] = decodeBackup(
+      encodeBackup([
+        BackupSubstance(
+          id: _s1,
+          name: 'Coffee',
+          doses: const [1e20],
+          intakes: [
+            BackupIntake(
+              id: _i1,
+              takenAt: DateTime.utc(2026, 9, 28),
+              tzOffsetMin: 0,
+              amount: 1e19,
+            ),
+          ],
+        ),
+      ], now: now),
+      now: now,
+    );
+    expect(s.doses, [1e20]);
+    expect(s.intakes.single.amount, 1e19);
+  });
+
   test('a minimal file gets defaults; unknown color and icon fall back', () {
     final [s] = decodeBackup(
       file([

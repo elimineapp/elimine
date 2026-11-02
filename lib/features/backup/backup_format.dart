@@ -173,8 +173,13 @@ final _uuidPattern = RegExp(
   r'[0-9a-fA-F]{12}$',
 );
 
-/// Whole doses read better as `250` than `250.0`.
-num _number(double v) => v == v.roundToDouble() ? v.toInt() : v;
+/// Whole doses read better as `250` than `250.0`. Only where an integer
+/// holds them exactly: [double.toInt] clamps larger ones to the int range.
+num _number(double v) =>
+    v == v.roundToDouble() && v.abs() <= _maxExactInt ? v.toInt() : v;
+
+/// 2^53, up to which every whole number is exact as a double.
+const _maxExactInt = 9007199254740992;
 
 class _Reader {
   _Reader(this.now);
