@@ -115,6 +115,11 @@ void main() {
     expect(intake.takenAt, DateTime(2026, 9, 28, 14, 35));
     expect(find.text('Logged 200 mg'), findsOneWidget);
     expect(find.text('Now (today, 14:35)'), findsOneWidget);
+
+    // Undo is offered for a while, not until it's tapped.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(find.text('Logged 200 mg'), findsNothing);
     await finish(tester);
   });
 

@@ -211,6 +211,8 @@ class _SubstanceScreenState extends ConsumerState<SubstanceScreen> {
                 ? l.intakeLoggedNoDose
                 : l.intakeLogged(l.dose(amount, substance.unit)),
           ),
+          // Flutter keeps a snackbar with an action until it's tapped.
+          persist: false,
           action: SnackBarAction(
             label: l.undo,
             onPressed: () => service.delete(id),

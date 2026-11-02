@@ -18,6 +18,8 @@ void deleteIntake(
     ..showSnackBar(
       SnackBar(
         content: Text(l.intakeDeleted),
+        // Flutter keeps a snackbar with an action until it's tapped.
+        persist: false,
         action: SnackBarAction(
           label: l.undo,
           onPressed: () => service.restore(id),

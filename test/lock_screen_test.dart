@@ -265,6 +265,26 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets("the app's snackbars don't show on the lock screen", (
+    tester,
+  ) async {
+    final container = await pumpApp(tester);
+    await enter(tester, '2468');
+    await tester.tap(find.text('Coffee').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('logButton')));
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsOneWidget);
+
+    final lock = container.read(appLockProvider.notifier);
+    await tester.runAsync(() => lock.setLockAfter(Duration.zero));
+    lock.appHidden();
+    await tester.pumpAndSettle();
+    expect(find.text('Enter PIN'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   group('forgotten PIN', () {
     Future<void> openDialog(WidgetTester tester) async {
       await tester.tap(find.byKey(const Key('forgotPin')));

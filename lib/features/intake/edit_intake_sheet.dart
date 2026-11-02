@@ -42,6 +42,8 @@ Future<void> showEditIntakeSheet(
         ..showSnackBar(
           SnackBar(
             content: Text(l.intakeUpdated),
+            // Flutter keeps a snackbar with an action until it's tapped.
+            persist: false,
             action: SnackBarAction(
               label: l.undo,
               onPressed: () => service.revert(intake),

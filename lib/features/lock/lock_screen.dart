@@ -125,11 +125,15 @@ class _LockLayerState extends ConsumerState<LockLayer>
                   child: FadeTransition(opacity: _cover, child: child),
                 ),
           child: HeroControllerScope.none(
-            child: Navigator(
-              key: _navigator,
-              onGenerateRoute: (_) => PageRouteBuilder(
-                pageBuilder: (context, _, _) =>
-                    LockScreen(onErased: widget.onErased),
+            // Its own messenger, so the app's snackbars don't show on the
+            // lock screen too.
+            child: ScaffoldMessenger(
+              child: Navigator(
+                key: _navigator,
+                onGenerateRoute: (_) => PageRouteBuilder(
+                  pageBuilder: (context, _, _) =>
+                      LockScreen(onErased: widget.onErased),
+                ),
               ),
             ),
           ),
