@@ -338,6 +338,38 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('after a drag the system cancels, the list updates again', (
+      tester,
+    ) async {
+      await fill(tester);
+      await pumpHome(tester);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Coffee')),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      for (var i = 0; i < 5; i++) {
+        await gesture.moveBy(const Offset(0, 10));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+
+      await tester.runAsync(
+        () => SubstanceService(db).create((
+          name: 'Aspirin',
+          unit: '',
+          color: 'green',
+          icon: 'pill',
+          doses: const [],
+        )),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Aspirin'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('a tile dragged below "New substance" lands above it', (
       tester,
     ) async {

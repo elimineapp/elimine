@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart' show GestureBinding;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -269,6 +270,9 @@ class _SubstanceListState extends ConsumerState<_SubstanceList> {
   /// is dropped.
   int? _dragFrom;
 
+  /// Whether [_onPointer] is routed every pointer event, during a drag.
+  bool _watchingPointers = false;
+
   static const _gap = 8.0;
   static const _radius = 20.0;
 
@@ -280,13 +284,42 @@ class _SubstanceListState extends ConsumerState<_SubstanceList> {
     }
   }
 
+  @override
+  void dispose() {
+    _stopWatchingPointers();
+    super.dispose();
+  }
+
   void _start(int index) {
     HapticFeedback.mediumImpact();
     _dragFrom = index;
+    if (!_watchingPointers) {
+      GestureBinding.instance.pointerRouter.addGlobalRoute(_onPointer);
+      _watchingPointers = true;
+    }
+  }
+
+  /// Flutter drops a drag whose pointer the system takes away, e.g. for an
+  /// incoming call, without calling back; the list would then ignore the
+  /// database for good.
+  void _onPointer(PointerEvent event) {
+    if (event is! PointerCancelEvent || _dragFrom == null) return;
+    _stopWatchingPointers();
+    setState(() {
+      _dragFrom = null;
+      _items = widget.items;
+    });
+  }
+
+  void _stopWatchingPointers() {
+    if (!_watchingPointers) return;
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(_onPointer);
+    _watchingPointers = false;
   }
 
   /// Dropped where it was picked up: [_reorder] will not be called.
   void _end(int insertIndex) {
+    _stopWatchingPointers();
     final from = _dragFrom;
     if (from == null || insertIndex == from || insertIndex == from + 1) {
       setState(() {
