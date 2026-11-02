@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.1](https://github.com/elimineapp/elimine/compare/v0.4.0...v0.4.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **backup:** keep huge whole doses intact on export ([a6f17fb](https://github.com/elimineapp/elimine/commit/a6f17fb3b29ddfa62895a5de6904ec81b6afd0c0))
+* count "Yesterday" and "Day before" by calendar date ([2481b14](https://github.com/elimineapp/elimine/commit/2481b14376482f8f308579141471d461fddf1925))
+* dismiss undo snackbars and keep them off the lock screen ([b673ad3](https://github.com/elimineapp/elimine/commit/b673ad37eeec553127d0900a93e90b7075ce872c))
+* **home:** keep the substance list live after a cancelled drag ([0959040](https://github.com/elimineapp/elimine/commit/0959040876797d240e2ae6a0d7a49183b3c83d89))
+* **home:** move the date and the week marks on at midnight ([b7b283e](https://github.com/elimineapp/elimine/commit/b7b283e6715b4676e3cb8b694af66315ed497e16))
+* **lock:** lock after a long stay in the app's own system dialogs ([7ef5d51](https://github.com/elimineapp/elimine/commit/7ef5d5150326d064868768bdedeb364d842925f2))
+* open the date picker on intakes dated after today here ([804d54c](https://github.com/elimineapp/elimine/commit/804d54cc613f8bda28f56c8eb2ed52f061f8d537))
+
 ## [0.4.0](https://github.com/elimineapp/elimine/compare/v0.3.1...v0.4.0) (2026-10-23)
 
 
