@@ -24,10 +24,15 @@ class IntakeTimeField extends StatelessWidget {
     return at.isAfter(now) ? now : at;
   }
 
-  /// Moves to [day] keeping the currently chosen time of day.
-  void _selectDay(DateTime day) {
-    final t = value ?? clock();
-    onChanged(_clamp(DateTime(day.year, day.month, day.day, t.hour, t.minute)));
+  /// Moves [days] calendar days back from today, keeping the currently
+  /// chosen time of day. Counted by date, not by 24-hour steps, which miss a
+  /// day after a short one, such as the switch to summer time.
+  void _selectDaysAgo(int days) {
+    final now = clock();
+    final t = value ?? now;
+    onChanged(
+      _clamp(DateTime(now.year, now.month, now.day - days, t.hour, t.minute)),
+    );
   }
 
   /// Android has no combined picker, so the date comes first, then the time.
@@ -89,14 +94,12 @@ class IntakeTimeField extends StatelessWidget {
             ChoiceChip(
               label: Text(l.dayYesterday),
               selected: daysAgo == 1,
-              onSelected: (_) =>
-                  _selectDay(now.subtract(const Duration(days: 1))),
+              onSelected: (_) => _selectDaysAgo(1),
             ),
             ChoiceChip(
               label: Text(l.dayBeforeYesterday),
               selected: daysAgo == 2,
-              onSelected: (_) =>
-                  _selectDay(now.subtract(const Duration(days: 2))),
+              onSelected: (_) => _selectDaysAgo(2),
             ),
           ],
         ),
